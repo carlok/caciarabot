@@ -1,5 +1,7 @@
 # CaciaraBot
 
+<img src="docs/CaciaraBot.png" alt="CaciaraBot logo" width="200">
+
 Italian-first, self-hosted, reactive Telegram group bot. It mostly stays
 silent, watches ordinary group conversation, and occasionally reacts to
 configured words/phrases with a text or local image response. No LLM,
