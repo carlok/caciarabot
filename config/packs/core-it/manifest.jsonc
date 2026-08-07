@@ -1,0 +1,10 @@
+{
+  "id": "core-it",
+  "version": 1,
+  "locale": "it",
+
+  "name": {
+    "it": "Reazioni di base",
+    "en": "Core reactions"
+  }
+}

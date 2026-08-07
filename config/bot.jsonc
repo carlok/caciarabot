@@ -1,0 +1,24 @@
+{
+  // Default interaction corpus.
+  "defaultLocale": "it",
+
+  // Time context for Italian deployments.
+  "timezone": "Europe/Rome",
+
+  "reactionPacks": [
+    "core-it",
+    "custom"
+  ],
+
+  "maxReactionsPerMessage": 1,
+
+  "passiveReactions": true,
+
+  "commands": {
+    "enabled": true
+  },
+
+  "randomEvents": {
+    "enabled": false
+  }
+}

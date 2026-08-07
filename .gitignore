@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
+.DS_Store
+
+.env
+/data/*.db
+/data/*.db-shm
+/data/*.db-wal
+
+# Placeholder media directories should stay tracked via .gitkeep, but
+# actual media files the user drops in are their own content.
+/media/images/*/*
+!/media/images/*/.gitkeep
+
+# Local tuning lives in the custom pack; it never gets committed so
+# `git pull` never conflicts with it. manifest.jsonc and README.md are
+# tracked as the pack scaffold; only the reaction files are ignored.
+/config/packs/custom/*.jsonl

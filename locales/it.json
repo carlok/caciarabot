@@ -1,0 +1,10 @@
+{
+  "help.text": "CaciaraBot osserva la chat e reagisce di tanto in tanto. Comandi disponibili:\n/help - mostra questo messaggio\n/status - mostra lo stato del bot in questa chat",
+  "status.awake": "Attivo.",
+  "status.sleeping": "Sto dormendo.",
+  "status.passive_reactions_yes": "sì",
+  "status.passive_reactions_no": "no",
+  "status.line_passive_reactions": "Reazioni passive: {value}",
+  "status.line_activity": "Attività: {value}%",
+  "status.line_categories": "Categorie attive: {value}"
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://caciarabot.local/schemas/limits.schema.json",
+  "title": "CaciaraBot anti-spam limits",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "minimumChatIntervalSeconds": { "type": "integer", "minimum": 0 },
+    "maximumPassiveReactionsPer10Minutes": { "type": "integer", "minimum": 0 }
+  }
+}

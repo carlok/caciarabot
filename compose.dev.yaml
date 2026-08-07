@@ -1,0 +1,14 @@
+# Dev overlay: builds the `dev` target (editable install) and bind-mounts
+# the source tree so code edits show up on a restart, no image rebuild.
+#
+#   podman compose -f compose.yaml -f compose.dev.yaml up -d --build
+#   podman compose -f compose.yaml -f compose.dev.yaml restart   # after an edit
+#
+services:
+  caciarabot:
+    build:
+      target: dev
+    volumes:
+      - ./app:/app/app
+      - ./locales:/app/locales
+      - ./pyproject.toml:/app/pyproject.toml

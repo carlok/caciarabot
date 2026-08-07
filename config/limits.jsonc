@@ -1,0 +1,7 @@
+{
+  // Reserved for future anti-spam controls (per-chat interval, rolling
+  // time-window caps). Phase 1 only implements per-trigger cooldowns,
+  // which live on each reaction record's "cooldownSeconds" field.
+  "minimumChatIntervalSeconds": 0,
+  "maximumPassiveReactionsPer10Minutes": 0
+}

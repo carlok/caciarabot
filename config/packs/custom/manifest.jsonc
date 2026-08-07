@@ -1,0 +1,10 @@
+{
+  "id": "custom",
+  "version": 1,
+  "locale": "it",
+
+  "name": {
+    "it": "Reazioni personalizzate",
+    "en": "Custom reactions"
+  }
+}

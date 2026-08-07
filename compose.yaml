@@ -1,0 +1,15 @@
+services:
+  caciarabot:
+    build:
+      context: .
+      dockerfile: Containerfile
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./config:/config:ro
+      - ./media:/media:ro
+      - ./data:/data
+
+    restart: unless-stopped

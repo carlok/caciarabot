@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://caciarabot.local/schemas/reaction.schema.json",
+  "title": "CaciaraBot reaction rule (one JSONL record)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "category", "match", "responses"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "category": { "type": "string", "minLength": 1 },
+    "match": {
+      "type": "object",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "required": ["type", "values"],
+          "properties": {
+            "type": { "const": "word" },
+            "values": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["type", "values"],
+          "properties": {
+            "type": { "const": "phrase" },
+            "values": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "probability": { "type": "number", "minimum": 0, "maximum": 1 },
+    "cooldownSeconds": { "type": "integer", "minimum": 0 },
+    "priority": { "type": "integer" },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "caseInsensitive": { "type": "boolean" },
+        "normalizeApostrophes": { "type": "boolean" },
+        "ignoreAccents": { "type": "boolean" },
+        "collapseRepeatedLetters": { "type": "boolean" }
+      }
+    },
+    "responses": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["type", "weight"],
+        "properties": {
+          "type": {
+            "enum": ["text", "photo", "randomPhoto"]
+          },
+          "weight": { "type": "number", "exclusiveMinimum": 0 },
+          "value": { "type": "string" },
+          "path": { "type": "string" },
+          "directory": { "type": "string" }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "type": { "const": "text" } } },
+            "then": { "required": ["value"] }
+          },
+          {
+            "if": { "properties": { "type": { "const": "photo" } } },
+            "then": { "required": ["path"] }
+          },
+          {
+            "if": { "properties": { "type": { "const": "randomPhoto" } } },
+            "then": { "required": ["directory"] }
+          }
+        ]
+      }
+    }
+  }
+}

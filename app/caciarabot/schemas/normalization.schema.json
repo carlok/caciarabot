@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://caciarabot.local/schemas/normalization.schema.json",
+  "title": "CaciaraBot normalization options",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "caseInsensitive": { "type": "boolean" },
+    "normalizeApostrophes": { "type": "boolean" },
+    "ignoreAccents": { "type": "boolean" },
+    "collapseRepeatedLetters": { "type": "boolean" }
+  }
+}

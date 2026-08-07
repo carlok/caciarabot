@@ -1,0 +1,10 @@
+{
+  "caseInsensitive": true,
+  "normalizeApostrophes": true,
+
+  // Keep accents by default; individual rules may enable folding.
+  "ignoreAccents": false,
+
+  // Potentially destructive, therefore disabled globally.
+  "collapseRepeatedLetters": false
+}

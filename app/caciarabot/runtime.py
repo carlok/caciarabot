@@ -1,0 +1,23 @@
+"""Composition root's runtime object: everything a handler needs, assembled once at startup."""
+
+from __future__ import annotations
+
+import sqlite3
+from dataclasses import dataclass
+from pathlib import Path
+
+from caciarabot.config.models import BotConfig, LimitsConfig, ReactionRule
+from caciarabot.localization import Locales
+from caciarabot.normalization import NormalizationOptions
+
+
+@dataclass(slots=True)
+class Runtime:
+    bot_config: BotConfig
+    normalization_options: NormalizationOptions
+    limits_config: LimitsConfig
+    rules: list[ReactionRule]
+    locales: Locales
+    db: sqlite3.Connection
+    media_dir: Path
+    owner_id: int | None
