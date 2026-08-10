@@ -14,7 +14,8 @@ from pathlib import Path
 
 from caciarabot.bootstrap import load_configuration
 from caciarabot.config.errors import ConfigError
-from caciarabot.config.models import PhotoResponse, RandomPhotoResponse
+from caciarabot.config.models import BotConfig, PhotoResponse, RandomPhotoResponse
+from caciarabot.llm import load_prompt_pool
 from caciarabot.telegram.media import IMAGE_EXTENSIONS
 
 
@@ -58,6 +59,34 @@ def _check_media(media_dir: Path, rules: list) -> tuple[list[ConfigError], set[P
     return errors, seen_media_files
 
 
+def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigError]:
+    if not bot_config.llm_enabled:
+        return []
+
+    errors: list[ConfigError] = []
+
+    reply_prompts = load_prompt_pool(config_dir / "prompts" / "replies")
+    if not reply_prompts:
+        errors.append(
+            ConfigError(
+                file=str(config_dir / "prompts" / "replies"),
+                message="llm.enabled is true but no *.txt prompt files were found",
+            )
+        )
+
+    if bot_config.llm_daily_thought_enabled:
+        daily_prompts = load_prompt_pool(config_dir / "prompts" / "daily")
+        if not daily_prompts:
+            errors.append(
+                ConfigError(
+                    file=str(config_dir / "prompts" / "daily"),
+                    message="llm.dailyThought.enabled is true but no *.txt prompt files were found",
+                )
+            )
+
+    return errors
+
+
 def _count_config_files(config_dir: Path) -> int:
     top_level = ["bot.jsonc", "normalization.jsonc", "limits.jsonc"]
     count = sum(1 for name in top_level if (config_dir / name).is_file())
@@ -68,6 +97,9 @@ def _count_config_files(config_dir: Path) -> int:
                 continue
             count += sum(1 for _ in pack_dir.glob("*.jsonc"))
             count += sum(1 for _ in pack_dir.glob("*.jsonl"))
+    prompts_dir = config_dir / "prompts"
+    if prompts_dir.is_dir():
+        count += sum(1 for _ in prompts_dir.glob("*/*.txt"))
     return count
 
 
@@ -86,10 +118,12 @@ def main() -> None:
     )
 
     media_errors, media_files = ([], set())
+    llm_errors: list[ConfigError] = []
     if not errors:
         media_errors, media_files = _check_media(args.media_dir, rules)
+        llm_errors = _check_llm_prompts(args.config_dir, bot_config)
 
-    all_errors = [*errors, *media_errors]
+    all_errors = [*errors, *media_errors, *llm_errors]
 
     if all_errors:
         print("Configuration invalid.\n", file=sys.stderr)

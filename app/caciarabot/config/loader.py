@@ -34,6 +34,8 @@ def load_bot_config(config_dir: Path) -> tuple[BotConfig, list[ConfigError]]:
             )
         ]
 
+    llm = data.get("llm", {})
+
     return (
         BotConfig(
             default_locale=data["defaultLocale"],
@@ -45,6 +47,12 @@ def load_bot_config(config_dir: Path) -> tuple[BotConfig, list[ConfigError]]:
             emoji_reactions_enabled=random_events.get("enabled", False),
             emoji_reaction_probability=random_events.get("emojiReactionProbability", 0.0),
             emoji_reaction_pool=emoji_pool,
+            llm_enabled=llm.get("enabled", False),
+            llm_model=llm.get("model", "gemini-3.1-flash-lite"),
+            llm_dry_run=llm.get("dryRun", False),
+            llm_reply_probability=llm.get("reply", {}).get("probability", 0.0),
+            llm_daily_thought_enabled=llm.get("dailyThought", {}).get("enabled", False),
+            llm_daily_thought_time=llm.get("dailyThought", {}).get("time", "09:00"),
         ),
         [],
     )

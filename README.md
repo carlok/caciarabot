@@ -77,11 +77,14 @@ config/
 ├── bot.jsonc            # global settings: locale, packs, maxReactionsPerMessage, ...
 ├── normalization.jsonc  # global text-normalization defaults
 ├── limits.jsonc          # reserved anti-spam knobs (see note below)
-└── packs/
-    └── core-it/
-        ├── manifest.jsonc
-        ├── greetings.jsonl
-        └── reactions.jsonl
+├── packs/
+│   └── core-it/
+│       ├── manifest.jsonc
+│       ├── greetings.jsonl
+│       └── reactions.jsonl
+└── prompts/              # only used if bot.jsonc's "llm" is enabled
+    ├── replies/*.txt      # picked at random for LLM replies
+    └── daily/*.txt        # picked at random for the daily thought
 ```
 
 - **JSONC** (`bot.jsonc`, `normalization.jsonc`, `limits.jsonc`,
@@ -198,6 +201,73 @@ The default `podman compose up -d` (no overlay) always uses the
 production target: a non-editable wheel install with no source bind
 mount, closer to what you'd actually run in the group.
 
+## Ambient behaviors (optional, off by default)
+
+Two mechanisms independent of the word/phrase trigger system, both
+configured in `bot.jsonc`:
+
+### Emoji reactions
+
+```jsonc
+"randomEvents": {
+  "enabled": true,
+  "emojiReactionProbability": 0.33,
+  "emojiReactionPool": ["😁", "😢", "😡", "🤣", "👍", "👎", "🤡"]
+}
+```
+
+On any ordinary group message, roll this probability to tap a random
+emoji from the pool onto it — Telegram's native tap-to-react badge
+(`setMessageReaction`), not a reply message. Telegram only accepts a
+fixed set of emoji here; `emojiReactionPool` is validated against that
+set at config load time (`app/caciarabot/config/allowed_reactions.py`),
+so a typo fails `caciarabot-validate` instead of erroring against the
+live API.
+
+### LLM replies and daily thought (requires a Gemini API key)
+
+```jsonc
+"llm": {
+  "enabled": true,
+  "model": "gemini-3.1-flash-lite",
+  "dryRun": false,
+  "reply": { "probability": 0.1 },
+  "dailyThought": { "enabled": true, "time": "09:00" }
+}
+```
+
+Set `GEMINI_API_KEY` in `.env` (get one free at
+[aistudio.google.com](https://aistudio.google.com/apikey) — a couple
+of calls a day comfortably fits inside the free tier, though free
+quota is best-effort and can change). The bot fails to start if
+`llm.enabled` is `true` and the key is missing.
+
+- **Reply**: on any group message that didn't already get a word-trigger
+  reaction, roll `reply.probability`; if it hits, a random prompt is
+  picked from `config/prompts/replies/*.txt` and sent to Gemini
+  along with *only that one message's text* — no stored conversation
+  history — and the response is sent back as a normal text reply.
+- **Daily thought**: an in-process scheduler (not a host cron job —
+  this is one long-running container/process, so a background asyncio
+  loop needs no extra infrastructure) wakes up once a day at
+  `dailyThought.time` (in `bot.jsonc`'s `timezone`), picks a random
+  prompt from `config/prompts/daily/*.txt`, generates a short
+  unprompted message, and posts it to every chat the bot has seen.
+- Add more variety by dropping additional `.txt` files into either
+  `prompts/` folder — one prompt per file, picked at random each time.
+  No JSON structure needed, it's just prose.
+- **`dryRun: true`**: still makes the real Gemini call (so you can
+  iterate on prompts/probability and see actual output), but logs the
+  generated text (`llm_reply_dry_run` / `daily_thought_dry_run`
+  events) instead of sending it to Telegram. Use this to test the
+  feature without spamming a real group.
+- Model default is `gemini-3.1-flash-lite`; free-tier quota varies by
+  model and can be `0` for some (confirmed live against a real key:
+  `gemini-2.0-flash` was quota-0, `gemini-2.5-flash-lite` is retired
+  for new users, `gemini-3.1-flash-lite` and `gemini-flash-lite-latest`
+  both worked) — if you hit `429 RESOURCE_EXHAUSTED` with a real
+  quota-exceeded message, try a different model name here.
+
 ## Commands (Phase 1)
 
 ```text
@@ -217,6 +287,13 @@ CaciaraBot does not archive conversation content. Messages are
 normalized and evaluated against triggers in memory, aggregate
 counters are updated, and the message body is discarded. No full
 message text is logged or persisted by default.
+
+**Exception**: if `llm.enabled` is `true`, the LLM reply feature sends
+the *single message text that triggered a reply roll* to Google's
+Gemini API over the network — this is the one place message content
+leaves the machine. It is not stored locally either way, and no
+conversation history is sent, only that one message. If this is a
+concern, leave `llm.enabled: false` (the default).
 
 ## Development
 

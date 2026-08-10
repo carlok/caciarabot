@@ -1,5 +1,6 @@
 from caciarabot.storage.db import connect
 from caciarabot.storage.repositories import (
+    get_all_chat_ids,
     get_cached_file_id,
     get_chat_activity,
     get_chat_locale,
@@ -14,6 +15,7 @@ from caciarabot.storage.repositories import (
 
 __all__ = [
     "connect",
+    "get_all_chat_ids",
     "get_cached_file_id",
     "get_chat_activity",
     "get_chat_locale",

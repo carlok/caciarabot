@@ -1,10 +1,10 @@
-"""Ambient emoji reactions: independent of trigger matching.
+"""Ambient behaviors independent of trigger matching.
 
-Unlike word/phrase triggers, this isn't tied to any specific content —
-it's a flat chance, on any ordinary message, of tapping a random emoji
-reaction onto it. Kept separate from decision.py's collision/cooldown
-machinery since it's a fundamentally different mechanism (a Telegram
-message *reaction*, not a new message the bot sends).
+Unlike word/phrase triggers, these aren't tied to any specific
+content — each is a flat chance, on any ordinary message, of doing
+something (tapping an emoji reaction, generating an LLM reply). Kept
+separate from decision.py's collision/cooldown machinery since these
+are fundamentally different mechanisms from a triggered response.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from __future__ import annotations
 import random
 
 
-def select_emoji_reaction(
+def _pick_from_pool(
     pool: tuple[str, ...], probability: float, rng: random.Random | None = None
 ) -> str | None:
     if not pool or probability <= 0:
@@ -22,3 +22,15 @@ def select_emoji_reaction(
     if active_rng.random() < probability:
         return active_rng.choice(pool)
     return None
+
+
+def select_emoji_reaction(
+    pool: tuple[str, ...], probability: float, rng: random.Random | None = None
+) -> str | None:
+    return _pick_from_pool(pool, probability, rng)
+
+
+def select_llm_prompt(
+    pool: tuple[str, ...], probability: float, rng: random.Random | None = None
+) -> str | None:
+    return _pick_from_pool(pool, probability, rng)

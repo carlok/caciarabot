@@ -19,6 +19,12 @@ class BotConfig:
     emoji_reactions_enabled: bool = False
     emoji_reaction_probability: float = 0.0
     emoji_reaction_pool: tuple[str, ...] = ()
+    llm_enabled: bool = False
+    llm_model: str = "gemini-3.1-flash-lite"
+    llm_dry_run: bool = False
+    llm_reply_probability: float = 0.0
+    llm_daily_thought_enabled: bool = False
+    llm_daily_thought_time: str = "09:00"
 
 
 @dataclass(frozen=True, slots=True)

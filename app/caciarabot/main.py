@@ -12,6 +12,7 @@ from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 
 from caciarabot.bootstrap import load_configuration
+from caciarabot.llm import load_prompt_pool, run_daily_thought_loop
 from caciarabot.localization import load_locales
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
@@ -46,6 +47,17 @@ async def _main() -> None:
             print(f"  {error}", file=sys.stderr)
         sys.exit(1)
 
+    gemini_api_key = os.environ.get("GEMINI_API_KEY")
+    if bot_config.llm_enabled and not gemini_api_key:
+        print(
+            "config/bot.jsonc has llm.enabled=true but GEMINI_API_KEY is not set in the environment.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    llm_reply_prompts = load_prompt_pool(config_dir / "prompts" / "replies")
+    llm_daily_prompts = load_prompt_pool(config_dir / "prompts" / "daily")
+
     locales = load_locales(Path("locales"), bot_config.default_locale)
     db = connect(data_dir / "caciarabot.db")
 
@@ -58,6 +70,9 @@ async def _main() -> None:
         db=db,
         media_dir=media_dir,
         owner_id=owner_id,
+        gemini_api_key=gemini_api_key,
+        llm_reply_prompts=llm_reply_prompts,
+        llm_daily_prompts=llm_daily_prompts,
     )
 
     log_event("startup", reaction_rules=len(rules), reaction_packs=len(bot_config.reaction_packs))
@@ -65,6 +80,9 @@ async def _main() -> None:
     bot = Bot(token=token)
     dp = Dispatcher()
     dp.include_router(router)
+
+    if bot_config.llm_enabled and bot_config.llm_daily_thought_enabled:
+        asyncio.create_task(run_daily_thought_loop(bot, runtime))
 
     await dp.start_polling(bot, runtime=runtime)
 

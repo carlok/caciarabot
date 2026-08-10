@@ -27,5 +27,23 @@
     "enabled": false,
     "emojiReactionProbability": 0.33,
     "emojiReactionPool": ["😁", "😢", "😡", "🤣", "👍", "👎", "🤡", "🗿", "🦄", "🐳", "🌚"]
+  },
+
+  // Optional Gemini-backed replies (config/prompts/replies/*.txt) and a
+  // once-a-day unprompted post (config/prompts/daily/*.txt). Requires
+  // GEMINI_API_KEY in .env when enabled -- the bot refuses to start
+  // otherwise. dryRun logs the generated text instead of sending it, for
+  // testing without touching the real chat.
+  "llm": {
+    "enabled": false,
+    "model": "gemini-3.1-flash-lite",
+    "dryRun": false,
+    "reply": {
+      "probability": 0.1
+    },
+    "dailyThought": {
+      "enabled": false,
+      "time": "09:00"
+    }
   }
 }

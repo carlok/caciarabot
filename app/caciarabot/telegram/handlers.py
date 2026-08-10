@@ -11,9 +11,10 @@ from aiogram import Bot, Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from caciarabot.engine.ambient import select_emoji_reaction
+from caciarabot.engine.ambient import select_emoji_reaction, select_llm_prompt
 from caciarabot.engine.decision import select
 from caciarabot.engine.matcher import find_matches
+from caciarabot.llm import generate_reply
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
 from caciarabot.storage import (
@@ -81,39 +82,58 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
             log_event("emoji_reaction_selected", chat_id=chat_id, emoji=emoji)
 
     matches = find_matches(message.text, runtime.rules, runtime.normalization_options)
-    if not matches:
-        return
+    decisions = []
 
-    increment_counter(runtime.db, "global", "triggers_matched")
-    chat_activity = get_chat_activity(runtime.db, chat_id)
+    if matches:
+        increment_counter(runtime.db, "global", "triggers_matched")
+        chat_activity = get_chat_activity(runtime.db, chat_id)
 
-    cooldowns_by_rule_id = {rule.id: rule.cooldown_seconds for rule in runtime.rules}
+        cooldowns_by_rule_id = {rule.id: rule.cooldown_seconds for rule in runtime.rules}
 
-    def is_on_cooldown(trigger_id: str) -> bool:
-        cooldown_seconds = cooldowns_by_rule_id.get(trigger_id, 0)
-        return is_trigger_on_cooldown(runtime.db, chat_id, trigger_id, cooldown_seconds)
+        def is_on_cooldown(trigger_id: str) -> bool:
+            cooldown_seconds = cooldowns_by_rule_id.get(trigger_id, 0)
+            return is_trigger_on_cooldown(runtime.db, chat_id, trigger_id, cooldown_seconds)
 
-    decisions = select(
-        matches=matches,
-        chat_activity=chat_activity,
-        max_reactions_per_message=runtime.bot_config.max_reactions_per_message,
-        is_on_cooldown=is_on_cooldown,
-    )
-
-    if not decisions:
-        log_event("reaction_skipped", chat_id=chat_id, decision="none", reason="cooldown_or_probability")
-        return
-
-    for decision in decisions:
-        rule = decision.match.rule
-        record_trigger_fired(runtime.db, chat_id, rule.id)
-        increment_counter(runtime.db, "global", "reactions_sent")
-        increment_counter(runtime.db, "trigger", rule.id)
-        increment_counter(runtime.db, "category", rule.category)
-        log_event(
-            "reaction_selected",
-            chat_id=chat_id,
-            trigger_id=rule.id,
-            response_type=decision.response.type,
+        decisions = select(
+            matches=matches,
+            chat_activity=chat_activity,
+            max_reactions_per_message=runtime.bot_config.max_reactions_per_message,
+            is_on_cooldown=is_on_cooldown,
         )
-        await send_decision(message, runtime, decision)
+
+    if decisions:
+        for decision in decisions:
+            rule = decision.match.rule
+            record_trigger_fired(runtime.db, chat_id, rule.id)
+            increment_counter(runtime.db, "global", "reactions_sent")
+            increment_counter(runtime.db, "trigger", rule.id)
+            increment_counter(runtime.db, "category", rule.category)
+            log_event(
+                "reaction_selected",
+                chat_id=chat_id,
+                trigger_id=rule.id,
+                response_type=decision.response.type,
+            )
+            await send_decision(message, runtime, decision)
+        return
+
+    if matches:
+        log_event("reaction_skipped", chat_id=chat_id, decision="none", reason="cooldown_or_probability")
+
+    # LLM reply is independent of trigger matching, but skipped when a
+    # trigger already fired above -- one bot-authored message per
+    # user message is enough, even though an emoji reaction (not a
+    # message) can still land regardless.
+    if runtime.bot_config.llm_enabled and runtime.gemini_api_key:
+        prompt = select_llm_prompt(runtime.llm_reply_prompts, runtime.bot_config.llm_reply_probability)
+        if prompt is not None:
+            reply_text = await generate_reply(
+                runtime.gemini_api_key, runtime.bot_config.llm_model, prompt, message.text
+            )
+            if reply_text:
+                if runtime.bot_config.llm_dry_run:
+                    log_event("llm_reply_dry_run", chat_id=chat_id, text=reply_text)
+                else:
+                    await message.answer(reply_text)
+                increment_counter(runtime.db, "global", "llm_replies_sent")
+                log_event("llm_reply_selected", chat_id=chat_id)

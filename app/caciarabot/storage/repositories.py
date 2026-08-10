@@ -118,3 +118,7 @@ def get_top_counters(conn: sqlite3.Connection, scope: str, limit: int = 5) -> li
         "SELECT key, count FROM stats_counters WHERE scope = ? ORDER BY count DESC LIMIT ?",
         (scope, limit),
     ).fetchall()
+
+
+def get_all_chat_ids(conn: sqlite3.Connection) -> list[int]:
+    return [row["chat_id"] for row in conn.execute("SELECT chat_id FROM chats")]

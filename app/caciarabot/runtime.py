@@ -21,3 +21,6 @@ class Runtime:
     db: sqlite3.Connection
     media_dir: Path
     owner_id: int | None
+    gemini_api_key: str | None = None
+    llm_reply_prompts: tuple[str, ...] = ()
+    llm_daily_prompts: tuple[str, ...] = ()
