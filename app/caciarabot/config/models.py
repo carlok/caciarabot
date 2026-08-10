@@ -16,6 +16,9 @@ class BotConfig:
     max_reactions_per_message: int
     passive_reactions: bool
     commands_enabled: bool
+    emoji_reactions_enabled: bool = False
+    emoji_reaction_probability: float = 0.0
+    emoji_reaction_pool: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

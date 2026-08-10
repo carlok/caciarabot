@@ -7,10 +7,11 @@ talk to Telegram, per the clean-interfaces requirement (spec section 43).
 
 from __future__ import annotations
 
-from aiogram import Router
+from aiogram import Bot, Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
+from caciarabot.engine.ambient import select_emoji_reaction
 from caciarabot.engine.decision import select
 from caciarabot.engine.matcher import find_matches
 from caciarabot.logging_utils import log_event
@@ -23,7 +24,7 @@ from caciarabot.storage import (
     record_trigger_fired,
     touch_chat,
 )
-from caciarabot.telegram.renderer import send_decision
+from caciarabot.telegram.renderer import send_decision, send_emoji_reaction
 
 router = Router(name="caciarabot")
 
@@ -58,7 +59,7 @@ async def cmd_status(message: Message, runtime: Runtime) -> None:
 
 
 @router.message()
-async def on_group_message(message: Message, runtime: Runtime) -> None:
+async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None:
     if message.chat.type not in ("group", "supergroup"):
         return
     if not message.text or message.text.startswith("/"):
@@ -69,6 +70,15 @@ async def on_group_message(message: Message, runtime: Runtime) -> None:
     chat_id = message.chat.id
     touch_chat(runtime.db, chat_id)
     increment_counter(runtime.db, "global", "messages_observed")
+
+    if runtime.bot_config.emoji_reactions_enabled:
+        emoji = select_emoji_reaction(
+            runtime.bot_config.emoji_reaction_pool, runtime.bot_config.emoji_reaction_probability
+        )
+        if emoji is not None:
+            await send_emoji_reaction(bot, message, emoji)
+            increment_counter(runtime.db, "global", "emoji_reactions_sent")
+            log_event("emoji_reaction_selected", chat_id=chat_id, emoji=emoji)
 
     matches = find_matches(message.text, runtime.rules, runtime.normalization_options)
     if not matches:

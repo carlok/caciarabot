@@ -18,7 +18,14 @@
     "enabled": true
   },
 
+  // Ambient, trigger-independent Telegram message reactions (the tap-to-react
+  // emoji badge, not a reply message). emojiReactionPool must only contain
+  // emoji from Telegram's fixed reaction set (see
+  // app/caciarabot/config/allowed_reactions.py) -- anything else fails
+  // config validation.
   "randomEvents": {
-    "enabled": false
+    "enabled": false,
+    "emojiReactionProbability": 0.33,
+    "emojiReactionPool": ["😁", "😢", "😡", "🤣", "👍", "👎", "🤡", "🗿", "🦄", "🐳", "🌚"]
   }
 }

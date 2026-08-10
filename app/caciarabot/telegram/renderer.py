@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aiogram.types import FSInputFile, Message
+from aiogram import Bot
+from aiogram.exceptions import TelegramAPIError
+from aiogram.types import FSInputFile, Message, ReactionTypeEmoji
 
 from caciarabot.config.models import PhotoResponse, RandomPhotoResponse, TextResponse
 from caciarabot.engine.decision import Decision
@@ -41,3 +43,14 @@ async def send_decision(message: Message, runtime: Runtime, decision: Decision) 
 
     if not cached_file_id and sent.photo:
         set_cached_file_id(runtime.db, fingerprint, sent.photo[-1].file_id, "photo", str(path))
+
+
+async def send_emoji_reaction(bot: Bot, message: Message, emoji: str) -> None:
+    try:
+        await bot.set_message_reaction(
+            chat_id=message.chat.id,
+            message_id=message.message_id,
+            reaction=[ReactionTypeEmoji(emoji=emoji)],
+        )
+    except TelegramAPIError as exc:
+        log_event("emoji_reaction_failed", chat_id=message.chat.id, reason=str(exc))

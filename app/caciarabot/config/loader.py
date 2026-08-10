@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from caciarabot.config.allowed_reactions import ALLOWED_REACTION_EMOJI
 from caciarabot.config.errors import ConfigError, ConfigValidationError
 from caciarabot.config.jsonc import load_jsonc
 from caciarabot.config.models import BotConfig, LimitsConfig, normalization_options_from_dict
@@ -18,6 +19,21 @@ def load_bot_config(config_dir: Path) -> tuple[BotConfig, list[ConfigError]]:
     if errors:
         return _empty_bot_config(), errors
 
+    random_events = data.get("randomEvents", {})
+    emoji_pool = tuple(random_events.get("emojiReactionPool", ()))
+    unknown_emoji = [e for e in emoji_pool if e not in ALLOWED_REACTION_EMOJI]
+    if unknown_emoji:
+        return _empty_bot_config(), [
+            ConfigError(
+                file=str(path),
+                field="randomEvents.emojiReactionPool",
+                message=(
+                    f"not a Telegram-allowed reaction emoji: {unknown_emoji!r} "
+                    "(see app/caciarabot/config/allowed_reactions.py)"
+                ),
+            )
+        ]
+
     return (
         BotConfig(
             default_locale=data["defaultLocale"],
@@ -26,6 +42,9 @@ def load_bot_config(config_dir: Path) -> tuple[BotConfig, list[ConfigError]]:
             max_reactions_per_message=data.get("maxReactionsPerMessage", 1),
             passive_reactions=data.get("passiveReactions", True),
             commands_enabled=data.get("commands", {}).get("enabled", True),
+            emoji_reactions_enabled=random_events.get("enabled", False),
+            emoji_reaction_probability=random_events.get("emojiReactionProbability", 0.0),
+            emoji_reaction_pool=emoji_pool,
         ),
         [],
     )
