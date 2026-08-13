@@ -7,6 +7,8 @@ talk to Telegram, per the clean-interfaces requirement (spec section 43).
 
 from __future__ import annotations
 
+import random
+
 from aiogram import Bot, Router
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -14,6 +16,7 @@ from aiogram.types import Message
 from caciarabot.engine.ambient import select_emoji_reaction, select_llm_prompt
 from caciarabot.engine.decision import select
 from caciarabot.engine.matcher import find_matches
+from caciarabot.engine.mentions import is_bot_cited
 from caciarabot.llm import generate_reply
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
@@ -81,6 +84,22 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
             increment_counter(runtime.db, "global", "emoji_reactions_sent")
             log_event("emoji_reaction_selected", chat_id=chat_id, emoji=emoji)
 
+    if runtime.bot_config.llm_enabled and runtime.bot_config.llm_cited_reply_enabled and runtime.gemini_api_key:
+        replied_to_bot = (
+            message.reply_to_message is not None
+            and message.reply_to_message.from_user is not None
+            and runtime.bot_id is not None
+            and message.reply_to_message.from_user.id == runtime.bot_id
+        )
+        mention_spans = [
+            (entity.offset, entity.length)
+            for entity in (message.entities or [])
+            if entity.type == "mention"
+        ]
+        if is_bot_cited(message.text, mention_spans, runtime.bot_username, replied_to_bot):
+            await _handle_cited_reply(message, runtime, replied_to_bot)
+            return
+
     matches = find_matches(message.text, runtime.rules, runtime.normalization_options)
     decisions = []
 
@@ -137,3 +156,32 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
                     await message.answer(reply_text)
                 increment_counter(runtime.db, "global", "llm_replies_sent")
                 log_event("llm_reply_selected", chat_id=chat_id)
+
+
+async def _handle_cited_reply(message: Message, runtime: Runtime, replied_to_bot: bool) -> None:
+    chat_id = message.chat.id
+    if not runtime.llm_cited_prompts:
+        return
+
+    prompt = random.choice(runtime.llm_cited_prompts)
+
+    if replied_to_bot and message.reply_to_message and message.reply_to_message.text:
+        user_message = (
+            f'Your earlier message: "{message.reply_to_message.text}"\n'
+            f"Reply from the group: {message.text}"
+        )
+    else:
+        user_message = message.text
+
+    reply_text = await generate_reply(
+        runtime.gemini_api_key, runtime.bot_config.llm_model, prompt, user_message
+    )
+    if not reply_text:
+        return
+
+    if runtime.bot_config.llm_dry_run:
+        log_event("llm_cited_reply_dry_run", chat_id=chat_id, text=reply_text)
+    else:
+        await message.answer(reply_text)
+    increment_counter(runtime.db, "global", "llm_cited_replies_sent")
+    log_event("llm_cited_reply_selected", chat_id=chat_id)

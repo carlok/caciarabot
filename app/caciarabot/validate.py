@@ -84,6 +84,16 @@ def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigEr
                 )
             )
 
+    if bot_config.llm_cited_reply_enabled:
+        cited_prompts = load_prompt_pool(config_dir / "prompts" / "cited")
+        if not cited_prompts:
+            errors.append(
+                ConfigError(
+                    file=str(config_dir / "prompts" / "cited"),
+                    message="llm.citedReply.enabled is true but no *.txt prompt files were found",
+                )
+            )
+
     return errors
 
 

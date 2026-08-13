@@ -29,8 +29,12 @@
     "emojiReactionPool": ["😁", "😢", "😡", "🤣", "👍", "👎", "🤡", "🗿", "🦄", "🐳", "🌚"]
   },
 
-  // Optional Gemini-backed replies (config/prompts/replies/*.txt) and a
-  // once-a-day unprompted post (config/prompts/daily/*.txt). Requires
+  // Optional Gemini-backed replies (config/prompts/replies/*.txt), a
+  // once-a-day unprompted post (config/prompts/daily/*.txt), and a reply
+  // whenever someone directly addresses the bot -- @mention or a Telegram
+  // reply to one of its own messages -- via config/prompts/cited/*.txt.
+  // citedReply always fires when the bot is addressed (no probability
+  // knob); the other two are probability/schedule-gated. Requires
   // GEMINI_API_KEY in .env when enabled -- the bot refuses to start
   // otherwise. dryRun logs the generated text instead of sending it, for
   // testing without touching the real chat.
@@ -44,6 +48,9 @@
     "dailyThought": {
       "enabled": false,
       "time": "09:00"
+    },
+    "citedReply": {
+      "enabled": false
     }
   }
 }

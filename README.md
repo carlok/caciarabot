@@ -83,8 +83,9 @@ config/
 │       ├── greetings.jsonl
 │       └── reactions.jsonl
 └── prompts/              # only used if bot.jsonc's "llm" is enabled
-    ├── replies/*.txt      # picked at random for LLM replies
-    └── daily/*.txt        # picked at random for the daily thought
+    ├── replies/*.txt      # picked at random for ambient LLM replies
+    ├── daily/*.txt        # picked at random for the daily thought
+    └── cited/*.txt        # picked at random when the bot is directly addressed
 ```
 
 - **JSONC** (`bot.jsonc`, `normalization.jsonc`, `limits.jsonc`,
@@ -254,7 +255,7 @@ set at config load time (`app/caciarabot/config/allowed_reactions.py`),
 so a typo fails `caciarabot-validate` instead of erroring against the
 live API.
 
-### LLM replies and daily thought (requires a Gemini API key)
+### LLM replies, daily thought, and cited replies (requires a Gemini API key)
 
 ```jsonc
 "llm": {
@@ -262,7 +263,8 @@ live API.
   "model": "gemini-3.1-flash-lite",
   "dryRun": false,
   "reply": { "probability": 0.1 },
-  "dailyThought": { "enabled": true, "time": "09:00" }
+  "dailyThought": { "enabled": true, "time": "09:00" },
+  "citedReply": { "enabled": true }
 }
 ```
 
@@ -283,14 +285,26 @@ quota is best-effort and can change). The bot fails to start if
   `dailyThought.time` (in `bot.jsonc`'s `timezone`), picks a random
   prompt from `config/prompts/daily/*.txt`, generates a short
   unprompted message, and posts it to every chat the bot has seen.
-- Add more variety by dropping additional `.txt` files into either
-  `prompts/` folder — one prompt per file, picked at random each time.
-  No JSON structure needed, it's just prose.
+- **Cited reply**: when someone directly addresses the bot — types its
+  `@username` in text, or uses Telegram's native reply feature on one
+  of the bot's own earlier messages — it *always* replies (no
+  probability roll; a direct address going unanswered reads as broken,
+  not restrained). Detection uses Telegram's message entities (exact
+  `@mention` spans), not a raw text search, so it can't be fooled by
+  the username appearing as a substring of something else. A random
+  prompt is picked from `config/prompts/cited/*.txt`; if the citation
+  was a reply to the bot's own message, that earlier message is
+  included as context so the reply can actually address it. This
+  takes priority over word triggers and the ambient reply for that
+  message — no double-reply.
+- Add more variety by dropping additional `.txt` files into any
+  `prompts/` subfolder — one prompt per file, picked at random each
+  time. No JSON structure needed, it's just prose.
 - **`dryRun: true`**: still makes the real Gemini call (so you can
   iterate on prompts/probability and see actual output), but logs the
-  generated text (`llm_reply_dry_run` / `daily_thought_dry_run`
-  events) instead of sending it to Telegram. Use this to test the
-  feature without spamming a real group.
+  generated text (`llm_reply_dry_run` / `daily_thought_dry_run` /
+  `llm_cited_reply_dry_run` events) instead of sending it to Telegram.
+  Use this to test the feature without spamming a real group.
 - Model default is `gemini-3.1-flash-lite`; free-tier quota varies by
   model and can be `0` for some (confirmed live against a real key:
   `gemini-2.0-flash` was quota-0, `gemini-2.5-flash-lite` is retired

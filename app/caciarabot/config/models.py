@@ -25,6 +25,7 @@ class BotConfig:
     llm_reply_probability: float = 0.0
     llm_daily_thought_enabled: bool = False
     llm_daily_thought_time: str = "09:00"
+    llm_cited_reply_enabled: bool = False
 
 
 @dataclass(frozen=True, slots=True)

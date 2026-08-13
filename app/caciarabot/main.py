@@ -57,9 +57,13 @@ async def _main() -> None:
 
     llm_reply_prompts = load_prompt_pool(config_dir / "prompts" / "replies")
     llm_daily_prompts = load_prompt_pool(config_dir / "prompts" / "daily")
+    llm_cited_prompts = load_prompt_pool(config_dir / "prompts" / "cited")
 
     locales = load_locales(Path("locales"), bot_config.default_locale)
     db = connect(data_dir / "caciarabot.db")
+
+    bot = Bot(token=token)
+    me = await bot.get_me()
 
     runtime = Runtime(
         bot_config=bot_config,
@@ -73,11 +77,18 @@ async def _main() -> None:
         gemini_api_key=gemini_api_key,
         llm_reply_prompts=llm_reply_prompts,
         llm_daily_prompts=llm_daily_prompts,
+        llm_cited_prompts=llm_cited_prompts,
+        bot_id=me.id,
+        bot_username=me.username,
     )
 
-    log_event("startup", reaction_rules=len(rules), reaction_packs=len(bot_config.reaction_packs))
+    log_event(
+        "startup",
+        reaction_rules=len(rules),
+        reaction_packs=len(bot_config.reaction_packs),
+        bot_username=me.username,
+    )
 
-    bot = Bot(token=token)
     dp = Dispatcher()
     dp.include_router(router)
 
