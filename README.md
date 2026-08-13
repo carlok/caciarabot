@@ -176,6 +176,30 @@ podman compose down
 `docker compose` works too if you'd rather use Docker, but Podman is
 what this project is built and tested against.
 
+### Native Linux: enable the Podman socket first
+
+`podman compose` delegates to a Docker-API-compatible compose provider
+(`docker-compose` or `podman-compose`), which needs Podman's REST API
+socket running. On **macOS**, `podman machine` starts this
+automatically — nothing to do. On **native Linux** (e.g. Ubuntu), it's
+a systemd user service that isn't always enabled by default, and its
+absence is exactly this error:
+
+```text
+failed to connect to the docker API at unix:///run/user/1000/podman/podman.sock
+```
+
+Fix, once per machine:
+
+```bash
+systemctl --user enable --now podman.socket
+```
+
+Then `podman compose up -d` works as above. This isn't a project
+config issue — it's the same compose files on both platforms, just a
+one-time host prerequisite that macOS's `podman machine` happens to
+handle for you automatically.
+
 Volumes:
 
 - `./config` → `/config` (read-only)
