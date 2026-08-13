@@ -207,6 +207,28 @@ Volumes:
 - `./media` → `/media` (read-only)
 - `./data` → `/data` (read-write — SQLite database lives here)
 
+### Surviving a host reboot
+
+`compose.yaml`'s `restart: unless-stopped` only restarts the container
+if Podman's own tracking process is already up — it does **not**, by
+itself, guarantee the container comes back after a full host reboot.
+Rootless Podman has no persistent system daemon like Docker's; that
+requires two more things to be true:
+
+```bash
+loginctl show-user $USER | grep Linger              # should say Linger=yes
+systemctl --user is-enabled podman-restart.service   # should say "enabled"
+```
+
+If either isn't set: `sudo loginctl enable-linger $USER` and
+`systemctl --user enable podman-restart.service`.
+
+For a setup that doesn't depend on getting both of those right, use
+the **Quadlet** unit at [`deploy/caciarabot.container`](deploy/caciarabot.container)
+instead — systemd manages the container directly (no linger/
+podman-restart dependency at all). Install instructions are in the
+file's header comment.
+
 ### Fast local iteration
 
 For active development, use the `dev` overlay instead of rebuilding

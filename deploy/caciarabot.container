@@ -1,0 +1,44 @@
+# Podman Quadlet unit — systemd manages start/stop/restart-on-boot
+# directly, with no dependency on `loginctl enable-linger` +
+# `podman-restart.service` being correctly enabled (the standard
+# rootless-Podman reboot-persistence gotcha compose.yaml's
+# `restart: unless-stopped` alone doesn't cover).
+#
+# Install (adjust the path below if the repo isn't cloned at ~/caciarabot):
+#
+#   podman compose build                      # build the image once (from repo root)
+#   mkdir -p ~/.config/containers/systemd
+#   cp deploy/caciarabot.container ~/.config/containers/systemd/
+#   systemctl --user daemon-reload
+#   systemctl --user start caciarabot.service
+#   systemctl --user enable caciarabot.service   # survive reboot
+#   loginctl enable-linger $USER                 # let it start without an active login
+#
+# Manage:
+#   systemctl --user status caciarabot.service
+#   journalctl --user -u caciarabot.service -f
+#   systemctl --user restart caciarabot.service
+#
+# Rebuilding the image (after `git pull` + code changes) does NOT
+# require touching the unit file — just rebuild and restart:
+#   podman compose build --no-cache && systemctl --user restart caciarabot.service
+
+[Unit]
+Description=CaciaraBot - Italian-first reactive Telegram group bot
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/caciarabot-caciarabot:latest
+ContainerName=caciarabot
+EnvironmentFile=%h/caciarabot/.env
+Volume=%h/caciarabot/config:/config:ro
+Volume=%h/caciarabot/media:/media:ro
+Volume=%h/caciarabot/data:/data
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target
