@@ -21,7 +21,7 @@ git clone <this repo>
 cd caciarabot
 cp .env.example .env
 $EDITOR .env   # set TELEGRAM_BOT_TOKEN at minimum
-chmod 777 data # see "Data directory permissions" below
+chmod 777 data && chmod -R o+rX config media # see "Bind mount permissions" below
 podman compose up -d
 ```
 
@@ -29,23 +29,30 @@ Then add the bot to an Italian Telegram group — but read
 [Telegram privacy mode](#telegram-privacy-mode-read-this-first) below
 first, or passive triggers silently won't work.
 
-### Data directory permissions
+### Bind mount permissions
 
-The container runs as a fixed non-root UID (1000). `./data` is bind-mounted
-read-write so SQLite can create its database file there, but the host
-directory is owned by whoever cloned the repo — not UID 1000 — so the
-container can't write to it until you fix that up. If you skip this,
-the bot fails at startup with `sqlite3.OperationalError: unable to open
-database file`.
+The container runs as a fixed non-root UID (1000), which under
+rootless Podman's default user-namespace shift does **not** map 1:1 to
+your host user's UID — so every bind-mounted directory needs its
+permissions opened up for that shifted UID to read (`config`, `media`)
+or write (`data`) it. Skip this and you'll hit either
+`sqlite3.OperationalError: unable to open database file` (data) or
+`PermissionError: [Errno 13] Permission denied: '/config/bot.jsonc'`
+(config) at startup.
 
-- **Native Linux host (rootless Podman):** `podman unshare chown 1000:1000 ./data`
-  — this sets ownership as seen from inside the container's user
-  namespace, no world-writable permissions needed.
-- **macOS / Podman machine (remote client):** `podman unshare` doesn't
-  work against a remote client. Use `chmod 777 ./data` instead — it's
-  local dev-machine data, not a shared multi-user system, so the
-  broader permission bit is an acceptable trade for not fighting the
-  VM's UID mapping.
+- **`./data`** (read-write — SQLite needs to create its file there):
+  - **Native Linux host (rootless Podman):** `podman unshare chown 1000:1000 ./data`
+    — sets ownership as seen from inside the container's user
+    namespace, no world-writable permissions needed.
+  - **macOS / Podman machine (remote client):** `podman unshare` doesn't
+    work against a remote client. Use `chmod 777 ./data` instead — it's
+    local dev-machine data, not a shared multi-user system, so the
+    broader permission bit is an acceptable trade for not fighting the
+    VM's UID mapping.
+- **`./config` and `./media`** (read-only — just need to be readable):
+  `chmod -R o+rX config media` on either platform. Neither directory
+  holds secrets (those live in `.env`, never bind-mounted), so making
+  them world-readable is safe.
 
 ## Telegram privacy mode (read this first)
 
