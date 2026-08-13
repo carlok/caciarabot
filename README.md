@@ -223,7 +223,13 @@ podman compose -f compose.yaml -f compose.dev.yaml logs -f
 
 The default `podman compose up -d` (no overlay) always uses the
 production target: a non-editable wheel install with no source bind
-mount, closer to what you'd actually run in the group.
+mount, closer to what you'd actually run in the group. This is pinned
+explicitly via `build.target: runtime` in `compose.yaml` — without it,
+an unpinned build defaults to the *last* stage in `Containerfile`
+(`dev`), which some compose providers pick up differently than others.
+If you ever see `No module named caciarabot.main` in the logs, rebuild
+with `podman compose build --no-cache` — that's a stale image built
+from the wrong stage, not a code bug.
 
 ## Ambient behaviors (optional, off by default)
 
