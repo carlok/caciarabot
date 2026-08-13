@@ -10,7 +10,7 @@ COPY locales ./locales
 
 RUN uv sync --no-dev --no-editable
 
-FROM python:3.12-slim
+FROM python:3.12-slim AS runtime
 
 RUN groupadd --gid 1000 caciarabot \
     && useradd --uid 1000 --gid caciarabot --create-home --shell /usr/sbin/nologin caciarabot
