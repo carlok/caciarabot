@@ -122,3 +122,22 @@ def get_top_counters(conn: sqlite3.Connection, scope: str, limit: int = 5) -> li
 
 def get_all_chat_ids(conn: sqlite3.Connection) -> list[int]:
     return [row["chat_id"] for row in conn.execute("SELECT chat_id FROM chats")]
+
+
+def record_digest_sent(conn: sqlite3.Connection, url_hash: str, url: str, title: str, source: str) -> None:
+    conn.execute(
+        """
+        INSERT INTO digest_sent (url_hash, url, title, source, sent_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT (url_hash) DO UPDATE SET sent_at = excluded.sent_at
+        """,
+        (url_hash, url, title, source, time.time()),
+    )
+
+
+def get_recent_digest_hashes(conn: sqlite3.Connection, within_days: int = 30) -> set[str]:
+    cutoff = time.time() - within_days * 86400
+    return {
+        row["url_hash"]
+        for row in conn.execute("SELECT url_hash FROM digest_sent WHERE sent_at >= ?", (cutoff,))
+    }

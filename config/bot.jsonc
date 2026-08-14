@@ -30,11 +30,13 @@
   },
 
   // Optional Gemini-backed replies (config/prompts/replies/*.txt), a
-  // once-a-day unprompted post (config/prompts/daily/*.txt), and a reply
+  // once-a-day unprompted post (config/prompts/daily/*.txt), a reply
   // whenever someone directly addresses the bot -- @mention or a Telegram
-  // reply to one of its own messages -- via config/prompts/cited/*.txt.
+  // reply to one of its own messages -- via config/prompts/cited/*.txt,
+  // and a daily digest of one CS-related link (Hacker News / GitHub
+  // trending) with a short LLM comment via config/prompts/digest/*.txt.
   // citedReply always fires when the bot is addressed (no probability
-  // knob); the other two are probability/schedule-gated. Requires
+  // knob); the others are probability/schedule-gated. Requires
   // GEMINI_API_KEY in .env when enabled -- the bot refuses to start
   // otherwise. dryRun logs the generated text instead of sending it, for
   // testing without touching the real chat.
@@ -51,6 +53,11 @@
     },
     "citedReply": {
       "enabled": false
+    },
+    "digest": {
+      "enabled": false,
+      "time": "08:00",
+      "sources": ["hackernews", "github_trending"]
     }
   }
 }

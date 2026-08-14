@@ -94,6 +94,16 @@ def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigEr
                 )
             )
 
+    if bot_config.digest_enabled:
+        digest_prompts = load_prompt_pool(config_dir / "prompts" / "digest")
+        if not digest_prompts:
+            errors.append(
+                ConfigError(
+                    file=str(config_dir / "prompts" / "digest"),
+                    message="llm.digest.enabled is true but no *.txt prompt files were found",
+                )
+            )
+
     return errors
 
 

@@ -26,6 +26,13 @@ class BotConfig:
     llm_daily_thought_enabled: bool = False
     llm_daily_thought_time: str = "09:00"
     llm_cited_reply_enabled: bool = False
+    digest_enabled: bool = False
+    digest_time: str = "08:00"
+    # reddit is a supported source but not a default -- its public .json
+    # endpoints commonly 403 unauthenticated/non-browser requests (see
+    # digest/sources.py), so it needs to be opted into explicitly.
+    digest_sources: tuple[str, ...] = ("hackernews", "github_trending")
+    digest_reddit_subs: tuple[str, ...] = ("programming",)
 
 
 @dataclass(frozen=True, slots=True)

@@ -12,6 +12,7 @@ from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 
 from caciarabot.bootstrap import load_configuration
+from caciarabot.digest import run_digest_loop
 from caciarabot.llm import load_prompt_pool, run_daily_thought_loop
 from caciarabot.localization import load_locales
 from caciarabot.logging_utils import log_event
@@ -58,6 +59,7 @@ async def _main() -> None:
     llm_reply_prompts = load_prompt_pool(config_dir / "prompts" / "replies")
     llm_daily_prompts = load_prompt_pool(config_dir / "prompts" / "daily")
     llm_cited_prompts = load_prompt_pool(config_dir / "prompts" / "cited")
+    llm_digest_prompts = load_prompt_pool(config_dir / "prompts" / "digest")
 
     locales = load_locales(Path("locales"), bot_config.default_locale)
     db = connect(data_dir / "caciarabot.db")
@@ -78,6 +80,7 @@ async def _main() -> None:
         llm_reply_prompts=llm_reply_prompts,
         llm_daily_prompts=llm_daily_prompts,
         llm_cited_prompts=llm_cited_prompts,
+        llm_digest_prompts=llm_digest_prompts,
         bot_id=me.id,
         bot_username=me.username,
     )
@@ -94,6 +97,9 @@ async def _main() -> None:
 
     if bot_config.llm_enabled and bot_config.llm_daily_thought_enabled:
         asyncio.create_task(run_daily_thought_loop(bot, runtime))
+
+    if bot_config.llm_enabled and bot_config.digest_enabled:
+        asyncio.create_task(run_digest_loop(bot, runtime))
 
     await dp.start_polling(bot, runtime=runtime)
 

@@ -63,6 +63,23 @@
           "properties": {
             "enabled": { "type": "boolean" }
           }
+        },
+        "digest": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "time": { "type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$" },
+            "sources": {
+              "type": "array",
+              "items": { "enum": ["hackernews", "github_trending", "reddit"] },
+              "minItems": 1
+            },
+            "redditSubs": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
         }
       }
     }

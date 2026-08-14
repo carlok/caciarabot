@@ -54,6 +54,12 @@ def load_bot_config(config_dir: Path) -> tuple[BotConfig, list[ConfigError]]:
             llm_daily_thought_enabled=llm.get("dailyThought", {}).get("enabled", False),
             llm_daily_thought_time=llm.get("dailyThought", {}).get("time", "09:00"),
             llm_cited_reply_enabled=llm.get("citedReply", {}).get("enabled", False),
+            digest_enabled=llm.get("digest", {}).get("enabled", False),
+            digest_time=llm.get("digest", {}).get("time", "08:00"),
+            digest_sources=tuple(
+                llm.get("digest", {}).get("sources", ("hackernews", "github_trending"))
+            ),
+            digest_reddit_subs=tuple(llm.get("digest", {}).get("redditSubs", ("programming",))),
         ),
         [],
     )
