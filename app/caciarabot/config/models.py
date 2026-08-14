@@ -26,6 +26,10 @@ class BotConfig:
     llm_daily_thought_enabled: bool = False
     llm_daily_thought_time: str = "09:00"
     llm_cited_reply_enabled: bool = False
+    llm_cited_trigger_words: tuple[str, ...] = ("caciara",)
+    llm_secret_enabled: bool = False
+    llm_secret_probability: float = 0.0
+    llm_secret_cooldown_seconds: int = 1800
     digest_enabled: bool = False
     digest_time: str = "08:00"
     # reddit is a supported source but not a default -- its public .json

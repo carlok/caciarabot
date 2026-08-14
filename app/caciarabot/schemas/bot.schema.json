@@ -61,7 +61,20 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": { "type": "boolean" }
+            "enabled": { "type": "boolean" },
+            "triggerWords": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "secret": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "probability": { "type": "number", "minimum": 0, "maximum": 1 },
+            "cooldownSeconds": { "type": "integer", "minimum": 0 }
           }
         },
         "digest": {

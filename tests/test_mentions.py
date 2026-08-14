@@ -1,4 +1,4 @@
-from caciarabot.engine.mentions import is_bot_cited, is_bot_mentioned
+from caciarabot.engine.mentions import contains_word, is_bot_cited, is_bot_mentioned
 
 
 def test_mention_detected_via_entity_span():
@@ -43,3 +43,42 @@ def test_not_cited_when_bot_username_unknown():
     text = "@caciara_bot ciao"
     spans = [(0, 12)]
     assert not is_bot_cited(text, spans, None, replied_to_bot=False)
+
+
+def test_contains_word_matches_case_insensitively():
+    assert contains_word("che CACIARA oggi", "caciara")
+
+
+def test_contains_word_respects_boundaries():
+    # "caciara" inside "caciarabot" (no separator) is not a standalone word
+    assert not contains_word("scrivi a caciarabot", "caciara")
+
+
+def test_contains_word_no_match():
+    assert not contains_word("tutto tranquillo", "caciara")
+
+
+def test_cited_via_extra_trigger_word():
+    assert is_bot_cited(
+        "che caciara oggi",
+        [],
+        "caciara_bot",
+        replied_to_bot=False,
+        extra_trigger_words=("caciara",),
+    )
+
+
+def test_not_cited_via_trigger_word_when_not_configured():
+    assert not is_bot_cited(
+        "che caciara oggi", [], "caciara_bot", replied_to_bot=False, extra_trigger_words=()
+    )
+
+
+def test_trigger_word_does_not_match_inside_larger_word():
+    assert not is_bot_cited(
+        "scrivi a caciarabot",
+        [],
+        "caciara_bot",
+        replied_to_bot=False,
+        extra_trigger_words=("caciara",),
+    )

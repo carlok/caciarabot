@@ -60,6 +60,7 @@ async def _main() -> None:
     llm_daily_prompts = load_prompt_pool(config_dir / "prompts" / "daily")
     llm_cited_prompts = load_prompt_pool(config_dir / "prompts" / "cited")
     llm_digest_prompts = load_prompt_pool(config_dir / "prompts" / "digest")
+    llm_secret_prompts = load_prompt_pool(config_dir / "prompts" / "secret")
 
     locales = load_locales(Path("locales"), bot_config.default_locale)
     db = connect(data_dir / "caciarabot.db")
@@ -81,6 +82,7 @@ async def _main() -> None:
         llm_daily_prompts=llm_daily_prompts,
         llm_cited_prompts=llm_cited_prompts,
         llm_digest_prompts=llm_digest_prompts,
+        llm_secret_prompts=llm_secret_prompts,
         bot_id=me.id,
         bot_username=me.username,
     )

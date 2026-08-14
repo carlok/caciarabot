@@ -34,3 +34,11 @@ def select_llm_prompt(
     pool: tuple[str, ...], probability: float, rng: random.Random | None = None
 ) -> str | None:
     return _pick_from_pool(pool, probability, rng)
+
+
+def pick_secret_targets(members: list[str], rng: random.Random | None = None) -> list[str]:
+    if not members:
+        return []
+    active_rng = rng or random.Random()
+    count = min(len(members), active_rng.choice([1, 2]))
+    return active_rng.sample(members, count)

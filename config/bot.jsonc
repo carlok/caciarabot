@@ -31,15 +31,21 @@
 
   // Optional Gemini-backed replies (config/prompts/replies/*.txt), a
   // once-a-day unprompted post (config/prompts/daily/*.txt), a reply
-  // whenever someone directly addresses the bot -- @mention or a Telegram
-  // reply to one of its own messages -- via config/prompts/cited/*.txt,
-  // and a daily digest of one CS-related link (Hacker News / GitHub
-  // trending) with a short LLM comment via config/prompts/digest/*.txt.
-  // citedReply always fires when the bot is addressed (no probability
-  // knob); the others are probability/schedule-gated. Requires
-  // GEMINI_API_KEY in .env when enabled -- the bot refuses to start
-  // otherwise. dryRun logs the generated text instead of sending it, for
-  // testing without touching the real chat.
+  // whenever someone directly addresses the bot -- @mention, a Telegram
+  // reply to one of its own messages, or one of citedReply.triggerWords
+  // (default ["caciara"], word-boundary matched, so "caciara" alone works
+  // like an @mention even without the exact username) -- via
+  // config/prompts/cited/*.txt, a daily digest of one CS-related link via
+  // config/prompts/digest/*.txt, and a "secret" about one or two chat
+  // members (built from a roster recorded as people post -- name only, no
+  // message content -- since the Bot API can't list a group's full
+  // membership) whenever someone says "segreto", via
+  // config/prompts/secret/*.txt. citedReply always fires when the bot is
+  // addressed (no probability knob); the others are
+  // probability/cooldown/schedule-gated. Requires GEMINI_API_KEY in .env
+  // when enabled -- the bot refuses to start otherwise. dryRun logs the
+  // generated text instead of sending it, for testing without touching
+  // the real chat.
   "llm": {
     "enabled": false,
     "model": "gemini-3.1-flash-lite",
@@ -52,7 +58,13 @@
       "time": "09:00"
     },
     "citedReply": {
-      "enabled": false
+      "enabled": false,
+      "triggerWords": ["caciara"]
+    },
+    "secret": {
+      "enabled": false,
+      "probability": 0.5,
+      "cooldownSeconds": 1800
     },
     "digest": {
       "enabled": false,

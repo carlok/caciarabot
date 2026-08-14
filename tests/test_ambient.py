@@ -1,6 +1,6 @@
 import random
 
-from caciarabot.engine.ambient import select_emoji_reaction, select_llm_prompt
+from caciarabot.engine.ambient import pick_secret_targets, select_emoji_reaction, select_llm_prompt
 
 
 def test_empty_pool_never_reacts():
@@ -36,3 +36,27 @@ def test_llm_prompt_selection_picks_a_pool_member():
 
 def test_llm_prompt_selection_respects_zero_probability():
     assert select_llm_prompt(("x",), probability=0.0, rng=random.Random(1)) is None
+
+
+def test_pick_secret_targets_empty_members_returns_empty():
+    assert pick_secret_targets([], rng=random.Random(1)) == []
+
+
+def test_pick_secret_targets_single_member():
+    assert pick_secret_targets(["Marco"], rng=random.Random(1)) == ["Marco"]
+
+
+def test_pick_secret_targets_picks_one_or_two():
+    members = ["Marco", "Luca", "Giulia", "Anna"]
+    for seed in range(100):
+        targets = pick_secret_targets(members, rng=random.Random(seed))
+        assert 1 <= len(targets) <= 2
+        assert len(targets) == len(set(targets))
+        assert all(t in members for t in targets)
+
+
+def test_pick_secret_targets_never_exceeds_available_members():
+    members = ["Marco", "Luca"]
+    for seed in range(50):
+        targets = pick_secret_targets(members, rng=random.Random(seed))
+        assert len(targets) <= 2

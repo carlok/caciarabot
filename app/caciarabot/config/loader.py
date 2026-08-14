@@ -54,6 +54,12 @@ def load_bot_config(config_dir: Path) -> tuple[BotConfig, list[ConfigError]]:
             llm_daily_thought_enabled=llm.get("dailyThought", {}).get("enabled", False),
             llm_daily_thought_time=llm.get("dailyThought", {}).get("time", "09:00"),
             llm_cited_reply_enabled=llm.get("citedReply", {}).get("enabled", False),
+            llm_cited_trigger_words=tuple(
+                llm.get("citedReply", {}).get("triggerWords", ("caciara",))
+            ),
+            llm_secret_enabled=llm.get("secret", {}).get("enabled", False),
+            llm_secret_probability=llm.get("secret", {}).get("probability", 0.0),
+            llm_secret_cooldown_seconds=llm.get("secret", {}).get("cooldownSeconds", 1800),
             digest_enabled=llm.get("digest", {}).get("enabled", False),
             digest_time=llm.get("digest", {}).get("time", "08:00"),
             digest_sources=tuple(

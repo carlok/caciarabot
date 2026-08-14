@@ -141,3 +141,25 @@ def get_recent_digest_hashes(conn: sqlite3.Connection, within_days: int = 30) ->
         row["url_hash"]
         for row in conn.execute("SELECT url_hash FROM digest_sent WHERE sent_at >= ?", (cutoff,))
     }
+
+
+def record_chat_member(conn: sqlite3.Connection, chat_id: int, user_id: int, display_name: str) -> None:
+    conn.execute(
+        """
+        INSERT INTO chat_members (chat_id, user_id, display_name, last_seen_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT (chat_id, user_id) DO UPDATE SET
+            display_name = excluded.display_name,
+            last_seen_at = excluded.last_seen_at
+        """,
+        (chat_id, user_id, display_name, time.time()),
+    )
+
+
+def get_chat_members(conn: sqlite3.Connection, chat_id: int) -> list[str]:
+    return [
+        row["display_name"]
+        for row in conn.execute(
+            "SELECT display_name FROM chat_members WHERE chat_id = ?", (chat_id,)
+        )
+    ]

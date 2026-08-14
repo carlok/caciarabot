@@ -104,6 +104,16 @@ def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigEr
                 )
             )
 
+    if bot_config.llm_secret_enabled:
+        secret_prompts = load_prompt_pool(config_dir / "prompts" / "secret")
+        if not secret_prompts:
+            errors.append(
+                ConfigError(
+                    file=str(config_dir / "prompts" / "secret"),
+                    message="llm.secret.enabled is true but no *.txt prompt files were found",
+                )
+            )
+
     return errors
 
 

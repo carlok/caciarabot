@@ -13,24 +13,28 @@ from aiogram import Bot, Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from caciarabot.engine.ambient import select_emoji_reaction, select_llm_prompt
+from caciarabot.engine.ambient import pick_secret_targets, select_emoji_reaction, select_llm_prompt
 from caciarabot.engine.decision import select
 from caciarabot.engine.matcher import find_matches
-from caciarabot.engine.mentions import is_bot_cited
+from caciarabot.engine.mentions import contains_word, is_bot_cited
 from caciarabot.llm import generate_reply
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
 from caciarabot.storage import (
     get_chat_activity,
     get_chat_locale,
+    get_chat_members,
     increment_counter,
     is_trigger_on_cooldown,
+    record_chat_member,
     record_trigger_fired,
     touch_chat,
 )
 from caciarabot.telegram.renderer import send_decision, send_emoji_reaction
 
 router = Router(name="caciarabot")
+
+_SECRET_TRIGGER_ID = "llm_secret"
 
 
 @router.message(Command("help"))
@@ -75,6 +79,9 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
     touch_chat(runtime.db, chat_id)
     increment_counter(runtime.db, "global", "messages_observed")
 
+    if message.from_user is not None:
+        record_chat_member(runtime.db, chat_id, message.from_user.id, message.from_user.full_name)
+
     if runtime.bot_config.emoji_reactions_enabled:
         emoji = select_emoji_reaction(
             runtime.bot_config.emoji_reaction_pool, runtime.bot_config.emoji_reaction_probability
@@ -96,8 +103,29 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
             for entity in (message.entities or [])
             if entity.type == "mention"
         ]
-        if is_bot_cited(message.text, mention_spans, runtime.bot_username, replied_to_bot):
+        if is_bot_cited(
+            message.text,
+            mention_spans,
+            runtime.bot_username,
+            replied_to_bot,
+            runtime.bot_config.llm_cited_trigger_words,
+        ):
             await _handle_cited_reply(message, runtime, replied_to_bot)
+            return
+
+    if (
+        runtime.bot_config.llm_enabled
+        and runtime.bot_config.llm_secret_enabled
+        and runtime.gemini_api_key
+        and contains_word(message.text, "segreto")
+        and not is_trigger_on_cooldown(
+            runtime.db, chat_id, _SECRET_TRIGGER_ID, runtime.bot_config.llm_secret_cooldown_seconds
+        )
+    ):
+        prompt = select_llm_prompt(runtime.llm_secret_prompts, runtime.bot_config.llm_secret_probability)
+        if prompt is not None:
+            record_trigger_fired(runtime.db, chat_id, _SECRET_TRIGGER_ID)
+            await _handle_secret(message, runtime, prompt)
             return
 
     matches = find_matches(message.text, runtime.rules, runtime.normalization_options)
@@ -185,3 +213,26 @@ async def _handle_cited_reply(message: Message, runtime: Runtime, replied_to_bot
         await message.answer(reply_text)
     increment_counter(runtime.db, "global", "llm_cited_replies_sent")
     log_event("llm_cited_reply_selected", chat_id=chat_id)
+
+
+async def _handle_secret(message: Message, runtime: Runtime, prompt: str) -> None:
+    chat_id = message.chat.id
+    members = get_chat_members(runtime.db, chat_id)
+    targets = pick_secret_targets(members)
+    if not targets:
+        log_event("llm_secret_skipped", chat_id=chat_id, reason="no_known_members")
+        return
+
+    user_message = "Name(s): " + ", ".join(targets)
+    reply_text = await generate_reply(
+        runtime.gemini_api_key, runtime.bot_config.llm_model, prompt, user_message
+    )
+    if not reply_text:
+        return
+
+    if runtime.bot_config.llm_dry_run:
+        log_event("llm_secret_dry_run", chat_id=chat_id, targets=",".join(targets), text=reply_text)
+    else:
+        await message.answer(reply_text)
+    increment_counter(runtime.db, "global", "llm_secrets_sent")
+    log_event("llm_secret_selected", chat_id=chat_id, targets=",".join(targets))
