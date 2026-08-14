@@ -19,6 +19,12 @@ WORKDIR /app
 COPY --from=builder /build/.venv /app/.venv
 COPY --from=builder /build/locales /app/locales
 
+# COPY preserves the host build context's file permission bits. If the
+# host checkout has a strict umask, files land in the image unreadable
+# by the non-root `caciarabot` user set below -- independent of and in
+# addition to fixing the host umask, so this never depends on it.
+RUN chmod -R a+rX /app
+
 ENV PATH="/app/.venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1
 
@@ -49,6 +55,12 @@ COPY app ./app
 COPY locales ./locales
 
 RUN uv sync
+
+# See the identical step in the runtime stage above -- same reasoning.
+# Note this only covers the image-baked copy; compose.dev.yaml's bind
+# mount of the host ./app over /app/app at runtime still needs the host
+# checkout itself to be readable (the general host-side fix covers this).
+RUN chmod -R a+rX /app
 
 ENV PATH="/app/.venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1
