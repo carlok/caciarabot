@@ -54,6 +54,18 @@ or write (`data`) it. Skip this and you'll hit either
   holds secrets (those live in `.env`, never bind-mounted), so making
   them world-readable is safe.
 
+This shows up repeatedly on a host with a strict `umask` (e.g. `0027`,
+which masks all "other" access), since every file `git pull` rewrites
+comes out unreadable again. Check with `umask`; if it's not `0022`,
+fix it permanently with `echo 'umask 022' >> ~/.bashrc` (or the rc
+file for your actual shell), then start a new shell session. Until
+that's fixed, or as a general convenience, use
+[`deploy/update.sh`](deploy/update.sh) to do the whole
+pull-fix-rebuild-restart sequence in one command:
+```bash
+./deploy/update.sh            # or --no-cache if a build seems stale
+```
+
 ## Telegram privacy mode (read this first)
 
 By default, Telegram bots only receive messages that are commands
