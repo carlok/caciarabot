@@ -1,10 +1,23 @@
 {
-  "help.text": "CaciaraBot watches the chat and occasionally reacts. Available commands:\n/help - show this message\n/status - show the bot's status in this chat",
+  "help.text": "CaciaraBot watches the chat and occasionally reacts. Available commands:\n/help - show this message\n/status - show the bot's status in this chat\n/sleep - pause the bot in this chat (admin only)\n/wake - resume the bot in this chat (admin only)\n/categories - show or change active categories (admin only to change)\n/stats - show bot statistics\n/reload - reload configuration (admin only)",
   "status.awake": "Active.",
   "status.sleeping": "Sleeping.",
   "status.passive_reactions_yes": "yes",
   "status.passive_reactions_no": "no",
   "status.line_passive_reactions": "Passive reactions: {value}",
   "status.line_activity": "Activity: {value}%",
-  "status.line_categories": "Enabled categories: {value}"
+  "status.line_categories": "Enabled categories: {value}",
+  "permission.denied": "This command is restricted to administrators.",
+  "categories.list_header": "Categories:",
+  "categories.status_enabled": "enabled",
+  "categories.status_disabled": "disabled",
+  "categories.enabled_confirm": "Category \"{category}\" re-enabled.",
+  "categories.disabled_confirm": "Category \"{category}\" disabled.",
+  "categories.unknown": "Unknown category: {category}",
+  "stats.line_messages": "Messages observed: {value}",
+  "stats.line_triggers": "Triggers matched: {value}",
+  "stats.line_reactions": "Reactions sent: {value}",
+  "stats.top_header": "Most frequent:",
+  "reload.success": "Configuration reloaded.",
+  "reload.failed": "Reload failed:\n{errors}"
 }

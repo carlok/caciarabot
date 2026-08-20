@@ -23,7 +23,7 @@ from caciarabot.llm.scheduler import seconds_until_next
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
 from caciarabot.storage import (
-    get_all_chat_ids,
+    get_awake_chat_ids,
     get_recent_digest_hashes,
     increment_counter,
     record_digest_sent,
@@ -76,7 +76,7 @@ async def post_digest(bot: Bot, runtime: Runtime) -> None:
     url_hash = normalize_url_hash(candidate.url)
     record_digest_sent(runtime.db, url_hash, candidate.url, candidate.title, candidate.source)
 
-    for chat_id in get_all_chat_ids(runtime.db):
+    for chat_id in get_awake_chat_ids(runtime.db):
         if runtime.bot_config.llm_dry_run:
             log_event("digest_dry_run", chat_id=chat_id, text=text)
             increment_counter(runtime.db, "global", "digests_sent")

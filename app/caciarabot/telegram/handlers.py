@@ -8,33 +8,53 @@ talk to Telegram, per the clean-interfaces requirement (spec section 43).
 from __future__ import annotations
 
 import random
+from pathlib import Path
 
 from aiogram import Bot, Router
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
 
+from caciarabot.bootstrap import load_configuration, load_prompt_pools
 from caciarabot.engine.ambient import pick_secret_targets, select_emoji_reaction, select_llm_prompt
 from caciarabot.engine.decision import select
 from caciarabot.engine.matcher import find_matches
 from caciarabot.engine.mentions import contains_word, is_bot_cited
 from caciarabot.llm import generate_reply
+from caciarabot.localization import load_locales
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
 from caciarabot.storage import (
+    disable_category,
+    enable_category,
     get_chat_activity,
     get_chat_locale,
     get_chat_members,
+    get_counter,
+    get_disabled_categories,
+    get_top_counters,
     increment_counter,
+    is_chat_awake,
     is_trigger_on_cooldown,
     record_chat_member,
     record_trigger_fired,
+    set_chat_awake,
     touch_chat,
 )
+from caciarabot.telegram.permissions import is_authorized
 from caciarabot.telegram.renderer import send_decision, send_emoji_reaction
 
 router = Router(name="caciarabot")
 
 _SECRET_TRIGGER_ID = "llm_secret"
+
+
+async def _require_admin(message: Message, runtime: Runtime, bot: Bot, locale: str) -> bool:
+    if message.from_user is None or not await is_authorized(
+        bot.get_chat_member, message.chat.id, message.from_user.id, runtime.owner_id
+    ):
+        await message.answer(runtime.locales.text(locale, "permission.denied"))
+        return False
+    return True
 
 
 @router.message(Command("help"))
@@ -53,10 +73,13 @@ async def cmd_status(message: Message, runtime: Runtime) -> None:
         if runtime.bot_config.passive_reactions
         else "status.passive_reactions_no"
     )
-    categories = len({rule.category for rule in runtime.rules})
+    all_categories = {rule.category for rule in runtime.rules}
+    disabled = get_disabled_categories(runtime.db, chat_id)
+    categories = len(all_categories - disabled)
+    awake_key = "status.awake" if is_chat_awake(runtime.db, chat_id) else "status.sleeping"
 
     lines = [
-        runtime.locales.text(locale, "status.awake"),
+        runtime.locales.text(locale, awake_key),
         runtime.locales.text(
             locale, "status.line_passive_reactions", value=runtime.locales.text(locale, passive_key)
         ),
@@ -64,6 +87,129 @@ async def cmd_status(message: Message, runtime: Runtime) -> None:
         runtime.locales.text(locale, "status.line_categories", value=categories),
     ]
     await message.answer("\n".join(lines))
+
+
+@router.message(Command("sleep"))
+async def cmd_sleep(message: Message, runtime: Runtime, bot: Bot) -> None:
+    chat_id = message.chat.id
+    locale = get_chat_locale(runtime.db, chat_id, runtime.bot_config.default_locale)
+    if not await _require_admin(message, runtime, bot, locale):
+        return
+    set_chat_awake(runtime.db, chat_id, False)
+    await message.answer(runtime.locales.text(locale, "status.sleeping"))
+
+
+@router.message(Command("wake"))
+async def cmd_wake(message: Message, runtime: Runtime, bot: Bot) -> None:
+    chat_id = message.chat.id
+    locale = get_chat_locale(runtime.db, chat_id, runtime.bot_config.default_locale)
+    if not await _require_admin(message, runtime, bot, locale):
+        return
+    set_chat_awake(runtime.db, chat_id, True)
+    await message.answer(runtime.locales.text(locale, "status.awake"))
+
+
+@router.message(Command("categories"))
+async def cmd_categories(
+    message: Message, runtime: Runtime, bot: Bot, command: CommandObject
+) -> None:
+    chat_id = message.chat.id
+    locale = get_chat_locale(runtime.db, chat_id, runtime.bot_config.default_locale)
+    all_categories = sorted({rule.category for rule in runtime.rules})
+    parts = (command.args or "").split(maxsplit=1)
+
+    if len(parts) == 2 and parts[0] in ("enable", "disable"):
+        if not await _require_admin(message, runtime, bot, locale):
+            return
+
+        action, category_name = parts[0], parts[1].strip()
+        if category_name not in all_categories:
+            await message.answer(
+                runtime.locales.text(locale, "categories.unknown", category=category_name)
+            )
+            return
+
+        if action == "enable":
+            enable_category(runtime.db, chat_id, category_name)
+            await message.answer(
+                runtime.locales.text(locale, "categories.enabled_confirm", category=category_name)
+            )
+        else:
+            disable_category(runtime.db, chat_id, category_name)
+            await message.answer(
+                runtime.locales.text(locale, "categories.disabled_confirm", category=category_name)
+            )
+        return
+
+    disabled = get_disabled_categories(runtime.db, chat_id)
+    lines = [runtime.locales.text(locale, "categories.list_header")]
+    for category in all_categories:
+        state_key = (
+            "categories.status_disabled" if category in disabled else "categories.status_enabled"
+        )
+        lines.append(f"- {category}: {runtime.locales.text(locale, state_key)}")
+    await message.answer("\n".join(lines))
+
+
+@router.message(Command("stats"))
+async def cmd_stats(message: Message, runtime: Runtime) -> None:
+    chat_id = message.chat.id
+    locale = get_chat_locale(runtime.db, chat_id, runtime.bot_config.default_locale)
+
+    lines = [
+        runtime.locales.text(
+            locale, "stats.line_messages", value=get_counter(runtime.db, "global", "messages_observed")
+        ),
+        runtime.locales.text(
+            locale, "stats.line_triggers", value=get_counter(runtime.db, "global", "triggers_matched")
+        ),
+        runtime.locales.text(
+            locale, "stats.line_reactions", value=get_counter(runtime.db, "global", "reactions_sent")
+        ),
+    ]
+
+    top_triggers = get_top_counters(runtime.db, "trigger", 3)
+    if top_triggers:
+        lines.append("")
+        lines.append(runtime.locales.text(locale, "stats.top_header"))
+        for i, row in enumerate(top_triggers, start=1):
+            lines.append(f"{i}. {row['key']} — {row['count']}")
+
+    await message.answer("\n".join(lines))
+
+
+@router.message(Command("reload"))
+async def cmd_reload(message: Message, runtime: Runtime, bot: Bot) -> None:
+    chat_id = message.chat.id
+    locale = get_chat_locale(runtime.db, chat_id, runtime.bot_config.default_locale)
+    if not await _require_admin(message, runtime, bot, locale):
+        return
+
+    bot_config, normalization_options, limits_config, rules, errors = load_configuration(
+        runtime.config_dir
+    )
+    if errors:
+        error_text = "\n".join(str(error) for error in errors[:5])
+        await message.answer(runtime.locales.text(locale, "reload.failed", errors=error_text))
+        log_event("config_reload_failed", chat_id=chat_id, error_count=len(errors))
+        return
+
+    prompt_pools = load_prompt_pools(runtime.config_dir)
+    new_locales = load_locales(Path("locales"), bot_config.default_locale)
+
+    runtime.bot_config = bot_config
+    runtime.normalization_options = normalization_options
+    runtime.limits_config = limits_config
+    runtime.rules = rules
+    runtime.locales = new_locales
+    runtime.llm_reply_prompts = prompt_pools["replies"]
+    runtime.llm_daily_prompts = prompt_pools["daily"]
+    runtime.llm_cited_prompts = prompt_pools["cited"]
+    runtime.llm_digest_prompts = prompt_pools["digest"]
+    runtime.llm_secret_prompts = prompt_pools["secret"]
+
+    await message.answer(runtime.locales.text(locale, "reload.success"))
+    log_event("config_reloaded", chat_id=chat_id, reaction_rules=len(rules))
 
 
 @router.message()
@@ -81,6 +227,12 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
 
     if message.from_user is not None:
         record_chat_member(runtime.db, chat_id, message.from_user.id, message.from_user.full_name)
+
+    # Sleep suppresses everything below (all passive/ambient reactions) --
+    # commands like /wake, /help, /status stay available regardless since
+    # they're routed to their own handlers above, never reaching here.
+    if not is_chat_awake(runtime.db, chat_id):
+        return
 
     if runtime.bot_config.emoji_reactions_enabled:
         emoji = select_emoji_reaction(
@@ -128,7 +280,13 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
             await _handle_secret(message, runtime, prompt)
             return
 
-    matches = find_matches(message.text, runtime.rules, runtime.normalization_options)
+    disabled_categories = get_disabled_categories(runtime.db, chat_id)
+    active_rules = (
+        [rule for rule in runtime.rules if rule.category not in disabled_categories]
+        if disabled_categories
+        else runtime.rules
+    )
+    matches = find_matches(message.text, active_rules, runtime.normalization_options)
     decisions = []
 
     if matches:

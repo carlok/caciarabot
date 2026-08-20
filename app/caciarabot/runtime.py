@@ -20,6 +20,7 @@ class Runtime:
     locales: Locales
     db: sqlite3.Connection
     media_dir: Path
+    config_dir: Path
     owner_id: int | None
     gemini_api_key: str | None = None
     llm_reply_prompts: tuple[str, ...] = ()

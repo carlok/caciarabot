@@ -353,18 +353,48 @@ quota is best-effort and can change). The bot fails to start if
   both worked) — if you hit `429 RESOURCE_EXHAUSTED` with a real
   quota-exceeded message, try a different model name here.
 
-## Commands (Phase 1)
+## Commands
 
 ```text
-/help    - list available commands
-/status  - show whether passive reactions are on, chat activity, category count
+/help                          - list available commands
+/status                        - show sleep state, passive reactions, activity, category count
+/stats                         - message/trigger/reaction counters, top 3 triggers
+/categories                    - list categories and their per-chat enabled/disabled state
+/categories enable <name>      - re-enable a category in this chat (admin only)
+/categories disable <name>     - disable a category in this chat (admin only)
+/sleep                         - stop all passive/ambient reactions in this chat (admin only)
+/wake                          - resume them (admin only)
+/reload                        - hot-reload JSONC/JSONL config + prompt pools (admin only)
 ```
 
 Command names stay in English regardless of locale; only their text
-output is localized (Italian by default). Administrative commands
-(`/sleep`, `/wake`, `/categories`, `/reload`, ...) are a later phase —
-Phase 1 has no per-chat admin surface yet, only global environment
-configuration (`.env`) and file-based reaction packs.
+output is localized (Italian by default).
+
+**Admin-only commands**: authorized if the sender is a Telegram admin/
+creator of that group, *or* matches `CACIARABOT_OWNER_ID` in `.env`
+(bypasses the per-chat admin check everywhere — set it to your own
+numeric Telegram user ID, never a username). A non-admin gets
+`permission.denied`; the check is a live `getChatMember` call, no
+local cache, so a promotion/demotion in Telegram takes effect on the
+sender's very next command.
+
+**Sleep is per-chat and total**: while asleep, word triggers, emoji
+reactions, the ambient LLM reply, cited-reply, and "segreto" all stop
+firing, and that chat is excluded from the daily-thought and digest
+broadcasts too — commands (including `/wake`) always keep working
+regardless. State persists in SQLite (`chat_settings.awake`), survives
+a restart.
+
+**Categories** only gate word/phrase triggers from your JSONL packs
+(the only thing with a `category` field) — they don't affect emoji
+reactions, the LLM features, or the digest.
+
+**`/reload`** re-parses `bot.jsonc`, `normalization.jsonc`,
+`limits.jsonc`, every reaction pack, and every prompt pool
+(`replies`/`daily`/`cited`/`digest`/`secret`), and swaps them in only
+if the whole set validates — a bad JSONL line reports the same
+`file:line` diagnostic as `caciarabot-validate` and leaves the running
+config untouched, no restart needed either way.
 
 ## Privacy
 

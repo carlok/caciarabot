@@ -20,7 +20,7 @@ from aiogram.exceptions import TelegramAPIError
 from caciarabot.llm.gemini import generate_reply
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
-from caciarabot.storage import get_all_chat_ids, increment_counter
+from caciarabot.storage import get_awake_chat_ids, increment_counter
 
 
 def seconds_until_next(time_str: str, tz: ZoneInfo, now: datetime | None = None) -> float:
@@ -56,7 +56,7 @@ async def post_daily_thought(bot: Bot, runtime: Runtime) -> None:
         log_event("daily_thought_failed", reason="empty generation")
         return
 
-    for chat_id in get_all_chat_ids(runtime.db):
+    for chat_id in get_awake_chat_ids(runtime.db):
         if runtime.bot_config.llm_dry_run:
             log_event("daily_thought_dry_run", chat_id=chat_id, text=text)
             increment_counter(runtime.db, "global", "daily_thoughts_sent")

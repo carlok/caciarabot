@@ -163,3 +163,52 @@ def get_chat_members(conn: sqlite3.Connection, chat_id: int) -> list[str]:
             "SELECT display_name FROM chat_members WHERE chat_id = ?", (chat_id,)
         )
     ]
+
+
+def set_chat_awake(conn: sqlite3.Connection, chat_id: int, awake: bool) -> None:
+    conn.execute(
+        "UPDATE chat_settings SET awake = ? WHERE chat_id = ?", (1 if awake else 0, chat_id)
+    )
+
+
+def is_chat_awake(conn: sqlite3.Connection, chat_id: int) -> bool:
+    row = conn.execute(
+        "SELECT awake FROM chat_settings WHERE chat_id = ?", (chat_id,)
+    ).fetchone()
+    return bool(row["awake"]) if row else True
+
+
+def get_awake_chat_ids(conn: sqlite3.Connection) -> list[int]:
+    return [
+        row["chat_id"]
+        for row in conn.execute(
+            """
+            SELECT c.chat_id FROM chats c
+            JOIN chat_settings s ON s.chat_id = c.chat_id
+            WHERE s.awake = 1
+            """
+        )
+    ]
+
+
+def disable_category(conn: sqlite3.Connection, chat_id: int, category: str) -> None:
+    conn.execute(
+        "INSERT OR IGNORE INTO chat_disabled_categories (chat_id, category) VALUES (?, ?)",
+        (chat_id, category),
+    )
+
+
+def enable_category(conn: sqlite3.Connection, chat_id: int, category: str) -> None:
+    conn.execute(
+        "DELETE FROM chat_disabled_categories WHERE chat_id = ? AND category = ?",
+        (chat_id, category),
+    )
+
+
+def get_disabled_categories(conn: sqlite3.Connection, chat_id: int) -> set[str]:
+    return {
+        row["category"]
+        for row in conn.execute(
+            "SELECT category FROM chat_disabled_categories WHERE chat_id = ?", (chat_id,)
+        )
+    }

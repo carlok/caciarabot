@@ -1,10 +1,23 @@
 {
-  "help.text": "CaciaraBot osserva la chat e reagisce di tanto in tanto. Comandi disponibili:\n/help - mostra questo messaggio\n/status - mostra lo stato del bot in questa chat",
+  "help.text": "CaciaraBot osserva la chat e reagisce di tanto in tanto. Comandi disponibili:\n/help - mostra questo messaggio\n/status - mostra lo stato del bot in questa chat\n/sleep - mette il bot in pausa in questa chat (solo admin)\n/wake - riattiva il bot in questa chat (solo admin)\n/categories - mostra o modifica le categorie attive (solo admin per modificare)\n/stats - mostra le statistiche del bot\n/reload - ricarica la configurazione (solo admin)",
   "status.awake": "Attivo.",
   "status.sleeping": "Sto dormendo.",
   "status.passive_reactions_yes": "sì",
   "status.passive_reactions_no": "no",
   "status.line_passive_reactions": "Reazioni passive: {value}",
   "status.line_activity": "Attività: {value}%",
-  "status.line_categories": "Categorie attive: {value}"
+  "status.line_categories": "Categorie attive: {value}",
+  "permission.denied": "Comando riservato agli amministratori.",
+  "categories.list_header": "Categorie:",
+  "categories.status_enabled": "attiva",
+  "categories.status_disabled": "disattivata",
+  "categories.enabled_confirm": "Categoria \"{category}\" riabilitata.",
+  "categories.disabled_confirm": "Categoria \"{category}\" disabilitata.",
+  "categories.unknown": "Categoria sconosciuta: {category}",
+  "stats.line_messages": "Messaggi osservati: {value}",
+  "stats.line_triggers": "Trigger riconosciuti: {value}",
+  "stats.line_reactions": "Reazioni inviate: {value}",
+  "stats.top_header": "Più frequenti:",
+  "reload.success": "Configurazione ricaricata.",
+  "reload.failed": "Ricaricamento fallito:\n{errors}"
 }

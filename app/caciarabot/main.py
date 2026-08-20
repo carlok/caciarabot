@@ -11,9 +11,9 @@ from pathlib import Path
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 
-from caciarabot.bootstrap import load_configuration
+from caciarabot.bootstrap import load_configuration, load_prompt_pools
 from caciarabot.digest import run_digest_loop
-from caciarabot.llm import load_prompt_pool, run_daily_thought_loop
+from caciarabot.llm import run_daily_thought_loop
 from caciarabot.localization import load_locales
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
@@ -56,11 +56,7 @@ async def _main() -> None:
         )
         sys.exit(1)
 
-    llm_reply_prompts = load_prompt_pool(config_dir / "prompts" / "replies")
-    llm_daily_prompts = load_prompt_pool(config_dir / "prompts" / "daily")
-    llm_cited_prompts = load_prompt_pool(config_dir / "prompts" / "cited")
-    llm_digest_prompts = load_prompt_pool(config_dir / "prompts" / "digest")
-    llm_secret_prompts = load_prompt_pool(config_dir / "prompts" / "secret")
+    prompt_pools = load_prompt_pools(config_dir)
 
     locales = load_locales(Path("locales"), bot_config.default_locale)
     db = connect(data_dir / "caciarabot.db")
@@ -76,13 +72,14 @@ async def _main() -> None:
         locales=locales,
         db=db,
         media_dir=media_dir,
+        config_dir=config_dir,
         owner_id=owner_id,
         gemini_api_key=gemini_api_key,
-        llm_reply_prompts=llm_reply_prompts,
-        llm_daily_prompts=llm_daily_prompts,
-        llm_cited_prompts=llm_cited_prompts,
-        llm_digest_prompts=llm_digest_prompts,
-        llm_secret_prompts=llm_secret_prompts,
+        llm_reply_prompts=prompt_pools["replies"],
+        llm_daily_prompts=prompt_pools["daily"],
+        llm_cited_prompts=prompt_pools["cited"],
+        llm_digest_prompts=prompt_pools["digest"],
+        llm_secret_prompts=prompt_pools["secret"],
         bot_id=me.id,
         bot_username=me.username,
     )
