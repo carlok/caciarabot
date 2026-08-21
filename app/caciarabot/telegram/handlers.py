@@ -243,6 +243,14 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
             increment_counter(runtime.db, "global", "emoji_reactions_sent")
             log_event("emoji_reaction_selected", chat_id=chat_id, emoji=emoji)
 
+    # Cited-reply no longer short-circuits the rest of the pipeline: it
+    # falls through to word-trigger matching below, so "caciara" plus a
+    # word that separately matches an image trigger sends both -- the
+    # LLM reply AND the image. It still preempts "segreto" and the
+    # ambient reply below (guarded by cited_reply_sent), since those are
+    # both alternative text replies -- stacking either alongside the
+    # cited reply would just be two competing bot messages for one line.
+    cited_reply_sent = False
     if runtime.bot_config.llm_enabled and runtime.bot_config.llm_cited_reply_enabled and runtime.gemini_api_key:
         replied_to_bot = (
             message.reply_to_message is not None
@@ -262,11 +270,11 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
             replied_to_bot,
             runtime.bot_config.llm_cited_trigger_words,
         ):
-            await _handle_cited_reply(message, runtime, replied_to_bot)
-            return
+            cited_reply_sent = await _handle_cited_reply(message, runtime, replied_to_bot)
 
     if (
-        runtime.bot_config.llm_enabled
+        not cited_reply_sent
+        and runtime.bot_config.llm_enabled
         and runtime.bot_config.llm_secret_enabled
         and runtime.gemini_api_key
         and contains_word(message.text, "segreto")
@@ -326,10 +334,11 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
         log_event("reaction_skipped", chat_id=chat_id, decision="none", reason="cooldown_or_probability")
 
     # LLM reply is independent of trigger matching, but skipped when a
-    # trigger already fired above -- one bot-authored message per
-    # user message is enough, even though an emoji reaction (not a
-    # message) can still land regardless.
-    if runtime.bot_config.llm_enabled and runtime.gemini_api_key:
+    # trigger or the cited-reply already fired above -- one bot-authored
+    # text reply per user message is enough, even though an emoji
+    # reaction (not a message) or a word-trigger image (a distinct
+    # response type, not competing text) can still land regardless.
+    if not cited_reply_sent and runtime.bot_config.llm_enabled and runtime.gemini_api_key:
         prompt = select_llm_prompt(runtime.llm_reply_prompts, runtime.bot_config.llm_reply_probability)
         if prompt is not None:
             reply_text = await generate_reply(
@@ -344,10 +353,13 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
                 log_event("llm_reply_selected", chat_id=chat_id)
 
 
-async def _handle_cited_reply(message: Message, runtime: Runtime, replied_to_bot: bool) -> None:
+async def _handle_cited_reply(message: Message, runtime: Runtime, replied_to_bot: bool) -> bool:
+    """Returns True only if a reply was actually generated and sent/logged --
+    callers use this to decide whether to suppress the ambient reply and
+    "segreto", not merely whether a citation was detected."""
     chat_id = message.chat.id
     if not runtime.llm_cited_prompts:
-        return
+        return False
 
     prompt = random.choice(runtime.llm_cited_prompts)
 
@@ -363,7 +375,7 @@ async def _handle_cited_reply(message: Message, runtime: Runtime, replied_to_bot
         runtime.gemini_api_key, runtime.bot_config.llm_model, prompt, user_message
     )
     if not reply_text:
-        return
+        return False
 
     if runtime.bot_config.llm_dry_run:
         log_event("llm_cited_reply_dry_run", chat_id=chat_id, text=reply_text)
@@ -371,6 +383,7 @@ async def _handle_cited_reply(message: Message, runtime: Runtime, replied_to_bot
         await message.answer(reply_text)
     increment_counter(runtime.db, "global", "llm_cited_replies_sent")
     log_event("llm_cited_reply_selected", chat_id=chat_id)
+    return True
 
 
 async def _handle_secret(message: Message, runtime: Runtime, prompt: str) -> None:
