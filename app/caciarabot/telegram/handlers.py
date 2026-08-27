@@ -204,6 +204,7 @@ async def cmd_reload(message: Message, runtime: Runtime, bot: Bot) -> None:
     runtime.locales = new_locales
     runtime.llm_reply_prompts = prompt_pools["replies"]
     runtime.llm_daily_prompts = prompt_pools["daily"]
+    runtime.llm_daily_link_prompts = prompt_pools["daily_link"]
     runtime.llm_cited_prompts = prompt_pools["cited"]
     runtime.llm_digest_prompts = prompt_pools["digest"]
     runtime.llm_secret_prompts = prompt_pools["secret"]

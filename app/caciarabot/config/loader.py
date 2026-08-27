@@ -53,6 +53,10 @@ def load_bot_config(config_dir: Path) -> tuple[BotConfig, list[ConfigError]]:
             llm_reply_probability=llm.get("reply", {}).get("probability", 0.0),
             llm_daily_thought_enabled=llm.get("dailyThought", {}).get("enabled", False),
             llm_daily_thought_time=llm.get("dailyThought", {}).get("time", "09:00"),
+            llm_daily_link_probability=llm.get("dailyThought", {}).get("linkProbability", 0.2),
+            llm_daily_link_languages=tuple(
+                llm.get("dailyThought", {}).get("linkLanguages", ("it", "en"))
+            ),
             llm_cited_reply_enabled=llm.get("citedReply", {}).get("enabled", False),
             llm_cited_trigger_words=tuple(
                 llm.get("citedReply", {}).get("triggerWords", ("caciara",))

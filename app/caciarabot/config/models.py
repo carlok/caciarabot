@@ -25,6 +25,8 @@ class BotConfig:
     llm_reply_probability: float = 0.0
     llm_daily_thought_enabled: bool = False
     llm_daily_thought_time: str = "09:00"
+    llm_daily_link_probability: float = 0.2
+    llm_daily_link_languages: tuple[str, ...] = ("it", "en")
     llm_cited_reply_enabled: bool = False
     llm_cited_trigger_words: tuple[str, ...] = ("caciara",)
     llm_secret_enabled: bool = False

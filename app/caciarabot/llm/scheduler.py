@@ -14,10 +14,12 @@ import random
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import aiohttp
 from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
 
 from caciarabot.llm.gemini import generate_reply
+from caciarabot.llm.wikipedia import fetch_random_article
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
 from caciarabot.storage import get_awake_chat_ids, increment_counter
@@ -41,17 +43,57 @@ async def run_daily_thought_loop(bot: Bot, runtime: Runtime) -> None:
         await post_daily_thought(bot, runtime)
 
 
+async def _generate_link_thought(runtime: Runtime, rng: random.Random) -> str | None:
+    """The "Wikipedia rabbit hole" variant: comment on a random article and link it.
+
+    Returns None for any reason at all (feature off, lost the roll, no
+    prompts, fetch failed, empty generation) so the caller can simply
+    fall back to a normal thought -- a bad Wikipedia day never costs the
+    daily post.
+    """
+    if not runtime.llm_daily_link_prompts:
+        return None
+    if rng.random() >= runtime.bot_config.llm_daily_link_probability:
+        return None
+
+    async with aiohttp.ClientSession() as session:
+        article = await fetch_random_article(
+            session, runtime.bot_config.llm_daily_link_languages, rng=rng
+        )
+    if article is None:
+        return None
+
+    prompt = rng.choice(runtime.llm_daily_link_prompts)
+    comment = await generate_reply(
+        runtime.gemini_api_key,
+        runtime.bot_config.llm_model,
+        prompt,
+        f"Title: {article.title}\nLanguage: {article.language}\nExtract: {article.extract}",
+    )
+    if not comment:
+        log_event("daily_link_failed", reason="empty generation", url=article.url)
+        return None
+
+    log_event("daily_link_selected", language=article.language, url=article.url)
+    return f"{comment}\n\n{article.title}\n{article.url}"
+
+
 async def post_daily_thought(bot: Bot, runtime: Runtime) -> None:
     if not runtime.llm_daily_prompts or not runtime.gemini_api_key:
         return
 
-    prompt = random.choice(runtime.llm_daily_prompts)
-    text = await generate_reply(
-        runtime.gemini_api_key,
-        runtime.bot_config.llm_model,
-        prompt,
-        "Write your thought of the day now.",
-    )
+    rng = random.Random()
+
+    text = await _generate_link_thought(runtime, rng)
+
+    if text is None:
+        prompt = rng.choice(runtime.llm_daily_prompts)
+        text = await generate_reply(
+            runtime.gemini_api_key,
+            runtime.bot_config.llm_model,
+            prompt,
+            "Write your thought of the day now.",
+        )
     if not text:
         log_event("daily_thought_failed", reason="empty generation")
         return

@@ -84,6 +84,19 @@ def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigEr
                 )
             )
 
+        if bot_config.llm_daily_link_probability > 0:
+            daily_link_prompts = load_prompt_pool(config_dir / "prompts" / "daily_link")
+            if not daily_link_prompts:
+                errors.append(
+                    ConfigError(
+                        file=str(config_dir / "prompts" / "daily_link"),
+                        message=(
+                            "llm.dailyThought.linkProbability is above 0 but no *.txt "
+                            "prompt files were found"
+                        ),
+                    )
+                )
+
     if bot_config.llm_cited_reply_enabled:
         cited_prompts = load_prompt_pool(config_dir / "prompts" / "cited")
         if not cited_prompts:

@@ -55,7 +55,13 @@
     },
     "dailyThought": {
       "enabled": false,
-      "time": "09:00"
+      "time": "09:00",
+      // linkProbability of daily posts instead comment on a random
+      // Wikipedia article (config/prompts/daily_link/*.txt) and link it;
+      // language picked at random from linkLanguages, always answered in
+      // Italian. Any failure falls back to a normal daily thought.
+      "linkProbability": 0.2,
+      "linkLanguages": ["it", "en"]
     },
     "citedReply": {
       "enabled": false,

@@ -104,6 +104,9 @@ config/
 └── prompts/              # only used if bot.jsonc's "llm" is enabled
     ├── replies/*.txt      # picked at random for ambient LLM replies
     ├── daily/*.txt        # picked at random for the daily thought
+    ├── daily_link/*.txt   # used when the daily thought links a random Wikipedia article
+    ├── digest/*.txt       # used for the daily CS-link digest
+    ├── secret/*.txt       # used by the "segreto" trigger
     └── cited/*.txt        # picked at random when the bot is directly addressed
 ```
 
@@ -326,6 +329,21 @@ quota is best-effort and can change). The bot fails to start if
   `dailyThought.time` (in `bot.jsonc`'s `timezone`), picks a random
   prompt from `config/prompts/daily/*.txt`, generates a short
   unprompted message, and posts it to every chat the bot has seen.
+  The pool covers a deliberately wide mood range — deadpan, warm,
+  enthusiastic, grandiose, bewildered, conspiratorial, plus fabricated
+  "what happened to me last night" stories — so consecutive days don't
+  read the same.
+- **Wikipedia rabbit hole**: `dailyThought.linkProbability` (default
+  `0.2`) of daily posts instead comment on a genuinely random Wikipedia
+  article and link it, using `config/prompts/daily_link/*.txt`.
+  Language is picked at random from `dailyThought.linkLanguages`
+  (default `["it","en"]`); English articles still get Italian
+  commentary. Very short stub articles are skipped (up to 3 attempts),
+  and any failure — lost roll, fetch error, empty generation — falls
+  back to a normal daily thought, so a bad Wikipedia day never costs
+  the post. No dedup table: with millions of articles a repeat is
+  vanishingly unlikely, so tracking them would be complexity for
+  nothing.
 - **Cited reply**: when someone directly addresses the bot — types its
   `@username` in text, or uses Telegram's native reply feature on one
   of the bot's own earlier messages — it *always* replies (no

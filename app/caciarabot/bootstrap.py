@@ -17,7 +17,7 @@ from caciarabot.config.reactions import load_reaction_pack
 from caciarabot.llm.prompts import load_prompt_pool
 from caciarabot.normalization import NormalizationOptions
 
-_PROMPT_POOL_NAMES = ("replies", "daily", "cited", "digest", "secret")
+_PROMPT_POOL_NAMES = ("replies", "daily", "daily_link", "cited", "digest", "secret")
 
 _EMPTY_BOT_CONFIG = BotConfig(
     default_locale="it",
