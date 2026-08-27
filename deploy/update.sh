@@ -23,6 +23,13 @@ fi
 echo "==> git pull"
 git pull
 
+# config/bot.jsonc is gitignored (per-deployment settings); only the
+# template is tracked. Create it on first run so a fresh clone works.
+if [[ ! -f config/bot.jsonc ]]; then
+    echo "==> config/bot.jsonc missing, creating it from config/bot.jsonc.example"
+    cp config/bot.jsonc.example config/bot.jsonc
+fi
+
 echo "==> fixing bind-mount permissions"
 chmod -R o+rX config media
 chmod 600 .env

@@ -21,9 +21,17 @@ git clone <this repo>
 cd caciarabot
 cp .env.example .env
 $EDITOR .env   # set TELEGRAM_BOT_TOKEN at minimum
+cp config/bot.jsonc.example config/bot.jsonc
+$EDITOR config/bot.jsonc   # optional: enable LLM features, tune probabilities
 chmod 777 data && chmod -R o+rX config media # see "Bind mount permissions" below
 podman compose up -d
 ```
+
+`config/bot.jsonc` is your live per-deployment config and is **not
+tracked by git** — only `config/bot.jsonc.example` is, exactly like
+`.env` / `.env.example`. That means a `git pull` can never clobber or
+conflict with your local settings. When the example gains new options,
+diff it against your copy and pull over whatever you want.
 
 Then add the bot to an Italian Telegram group — but read
 [Telegram privacy mode](#telegram-privacy-mode-read-this-first) below

@@ -61,7 +61,14 @@ def strip_jsonc_comments(text: str) -> str:
 
 
 def load_jsonc(path: Path) -> Any:
-    raw_text = path.read_text(encoding="utf-8")
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        example = path.with_suffix(path.suffix + ".example")
+        hint = f" -- copy {example} to {path} to get started" if example.is_file() else ""
+        raise ConfigValidationError(
+            [ConfigError(file=str(path), message=f"configuration file not found{hint}")]
+        ) from None
     stripped = strip_jsonc_comments(raw_text)
     try:
         return json.loads(stripped)
