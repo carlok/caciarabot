@@ -25,6 +25,7 @@ class Runtime:
     gemini_api_key: str | None = None
     llm_reply_prompts: tuple[str, ...] = ()
     llm_daily_prompts: tuple[str, ...] = ()
+    llm_daily_depth_prompts: tuple[str, ...] = ()
     llm_daily_link_prompts: tuple[str, ...] = ()
     llm_cited_prompts: tuple[str, ...] = ()
     llm_digest_prompts: tuple[str, ...] = ()

@@ -73,3 +73,33 @@ def test_disable_category_is_idempotent(tmp_path: Path):
     disable_category(conn, 1, "technology")
     disable_category(conn, 1, "technology")
     assert get_disabled_categories(conn, 1) == {"technology"}
+
+
+def test_prompt_history_returns_most_recent_first(tmp_path: Path):
+    from caciarabot.storage import get_recent_prompt_hashes, record_prompt_use
+
+    conn = _db(tmp_path)
+    for h in ("h1", "h2", "h3", "h4"):
+        record_prompt_use(conn, "daily", h)
+
+    assert get_recent_prompt_hashes(conn, "daily", 2) == {"h3", "h4"}
+    assert get_recent_prompt_hashes(conn, "daily", 10) == {"h1", "h2", "h3", "h4"}
+
+
+def test_prompt_history_is_per_pool(tmp_path: Path):
+    from caciarabot.storage import get_recent_prompt_hashes, record_prompt_use
+
+    conn = _db(tmp_path)
+    record_prompt_use(conn, "daily", "mood")
+    record_prompt_use(conn, "daily_depth", "depth")
+
+    assert get_recent_prompt_hashes(conn, "daily", 5) == {"mood"}
+    assert get_recent_prompt_hashes(conn, "daily_depth", 5) == {"depth"}
+
+
+def test_prompt_history_zero_limit_returns_empty(tmp_path: Path):
+    from caciarabot.storage import get_recent_prompt_hashes, record_prompt_use
+
+    conn = _db(tmp_path)
+    record_prompt_use(conn, "daily", "h1")
+    assert get_recent_prompt_hashes(conn, "daily", 0) == set()

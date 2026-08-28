@@ -18,11 +18,17 @@ import aiohttp
 from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
 
+from caciarabot.engine.rotation import prompt_hash, recent_window, select_fresh_prompt
 from caciarabot.llm.gemini import generate_reply
 from caciarabot.llm.wikipedia import fetch_random_article
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
-from caciarabot.storage import get_awake_chat_ids, increment_counter
+from caciarabot.storage import (
+    get_awake_chat_ids,
+    get_recent_prompt_hashes,
+    increment_counter,
+    record_prompt_use,
+)
 
 
 def seconds_until_next(time_str: str, tz: ZoneInfo, now: datetime | None = None) -> float:
@@ -41,6 +47,22 @@ async def run_daily_thought_loop(bot: Bot, runtime: Runtime) -> None:
         delay = seconds_until_next(runtime.bot_config.llm_daily_thought_time, tz)
         await asyncio.sleep(delay)
         await post_daily_thought(bot, runtime)
+
+
+def _pick_rotating(
+    runtime: Runtime, pool_name: str, pool: tuple[str, ...], rng: random.Random
+) -> str | None:
+    """Pick from a pool, biased away from what was used most recently.
+
+    Plain random is memoryless, so the same mood could reappear the very
+    next day; this records each pick and avoids the recent ones, which is
+    what makes consecutive days actually feel different.
+    """
+    recent = get_recent_prompt_hashes(runtime.db, pool_name, recent_window(len(pool)))
+    prompt = select_fresh_prompt(pool, recent, rng=rng)
+    if prompt is not None:
+        record_prompt_use(runtime.db, pool_name, prompt_hash(prompt))
+    return prompt
 
 
 async def _generate_link_thought(runtime: Runtime, rng: random.Random) -> str | None:
@@ -63,7 +85,7 @@ async def _generate_link_thought(runtime: Runtime, rng: random.Random) -> str | 
     if article is None:
         return None
 
-    prompt = rng.choice(runtime.llm_daily_link_prompts)
+    prompt = _pick_rotating(runtime, "daily_link", runtime.llm_daily_link_prompts, rng)
     comment = await generate_reply(
         runtime.gemini_api_key,
         runtime.bot_config.llm_model,
@@ -87,7 +109,13 @@ async def post_daily_thought(bot: Bot, runtime: Runtime) -> None:
     text = await _generate_link_thought(runtime, rng)
 
     if text is None:
-        prompt = rng.choice(runtime.llm_daily_prompts)
+        # Mood and depth are picked independently, so the pools multiply:
+        # 14 moods x 4 depths is far more distinct days than either alone.
+        prompt = _pick_rotating(runtime, "daily", runtime.llm_daily_prompts, rng)
+        depth = _pick_rotating(runtime, "daily_depth", runtime.llm_daily_depth_prompts, rng)
+        if depth:
+            prompt = f"{prompt}\n\n{depth}"
+
         text = await generate_reply(
             runtime.gemini_api_key,
             runtime.bot_config.llm_model,

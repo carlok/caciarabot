@@ -165,6 +165,25 @@ def get_chat_members(conn: sqlite3.Connection, chat_id: int) -> list[str]:
     ]
 
 
+def record_prompt_use(conn: sqlite3.Connection, pool: str, prompt_hash: str) -> None:
+    conn.execute(
+        "INSERT INTO prompt_history (pool, prompt_hash, used_at) VALUES (?, ?, ?)",
+        (pool, prompt_hash, time.time()),
+    )
+
+
+def get_recent_prompt_hashes(conn: sqlite3.Connection, pool: str, limit: int) -> set[str]:
+    if limit <= 0:
+        return set()
+    return {
+        row["prompt_hash"]
+        for row in conn.execute(
+            "SELECT prompt_hash FROM prompt_history WHERE pool = ? ORDER BY id DESC LIMIT ?",
+            (pool, limit),
+        )
+    }
+
+
 def set_chat_awake(conn: sqlite3.Connection, chat_id: int, awake: bool) -> None:
     conn.execute(
         "UPDATE chat_settings SET awake = ? WHERE chat_id = ?", (1 if awake else 0, chat_id)

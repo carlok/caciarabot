@@ -77,6 +77,7 @@ async def _main() -> None:
         gemini_api_key=gemini_api_key,
         llm_reply_prompts=prompt_pools["replies"],
         llm_daily_prompts=prompt_pools["daily"],
+        llm_daily_depth_prompts=prompt_pools["daily_depth"],
         llm_daily_link_prompts=prompt_pools["daily_link"],
         llm_cited_prompts=prompt_pools["cited"],
         llm_digest_prompts=prompt_pools["digest"],

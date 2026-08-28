@@ -111,7 +111,8 @@ config/
 │       └── reactions.jsonl
 └── prompts/              # only used if bot.jsonc's "llm" is enabled
     ├── replies/*.txt      # picked at random for ambient LLM replies
-    ├── daily/*.txt        # picked at random for the daily thought
+    ├── daily/*.txt        # the daily thought's mood (what it's like)
+    ├── daily_depth/*.txt  # the daily thought's length/depth, picked independently
     ├── daily_link/*.txt   # used when the daily thought links a random Wikipedia article
     ├── digest/*.txt       # used for the daily CS-link digest
     ├── secret/*.txt       # used by the "segreto" trigger
@@ -339,8 +340,14 @@ quota is best-effort and can change). The bot fails to start if
   unprompted message, and posts it to every chat the bot has seen.
   The pool covers a deliberately wide mood range — deadpan, warm,
   enthusiastic, grandiose, bewildered, conspiratorial, plus fabricated
-  "what happened to me last night" stories — so consecutive days don't
-  read the same.
+  "what happened to me last night" stories. Mood and *depth* are picked
+  independently: `config/prompts/daily_depth/*.txt` controls length and
+  development (a blunt one-liner, an unfinished fragment, the normal two
+  or three sentences, or a longer thought that actually goes somewhere),
+  so the two pools multiply — 14 moods x 4 depths.
+  Selection is not plain random: each pick is recorded in
+  `prompt_history` and recent ones are excluded, so the same mood can't
+  come round again for several days.
 - **Wikipedia rabbit hole**: `dailyThought.linkProbability` (default
   `0.2`) of daily posts instead comment on a genuinely random Wikipedia
   article and link it, using `config/prompts/daily_link/*.txt`.
