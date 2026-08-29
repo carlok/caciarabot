@@ -14,6 +14,7 @@ from caciarabot.config.errors import ConfigError, ConfigValidationError
 from caciarabot.config.loader import load_global_config
 from caciarabot.config.models import BotConfig, LimitsConfig, ReactionRule
 from caciarabot.config.reactions import load_reaction_pack
+from caciarabot.llm.fallback import load_message_pool
 from caciarabot.llm.prompts import load_prompt_pool
 from caciarabot.normalization import NormalizationOptions
 
@@ -27,6 +28,14 @@ _PROMPT_POOL_NAMES = (
     "digest",
     "secret",
 )
+
+# Not prompts: these hold the bot's own words, one message per line, used
+# when a generation fails. Loaded here anyway so startup and /reload pick
+# them up through the same single call.
+_MESSAGE_POOL_FILES = {
+    "daily_fallback": "daily.txt",
+    "daily_fallback_tail": "daily_tail.txt",
+}
 
 _EMPTY_BOT_CONFIG = BotConfig(
     default_locale="it",
@@ -85,10 +94,19 @@ def load_configuration(
     return bot_config, normalization_options, limits_config, rules, rule_errors
 
 
-def load_prompt_pools(config_dir: Path) -> dict[str, tuple[str, ...]]:
-    """Loads every named prompt pool (replies/daily/cited/digest/secret).
+def load_text_pools(config_dir: Path) -> dict[str, tuple[str, ...]]:
+    """Loads every prompt pool plus the deterministic fallback corpora.
 
     Shared between startup (main.py) and /reload so both build the pool
     set the exact same way.
     """
-    return {name: load_prompt_pool(config_dir / "prompts" / name) for name in _PROMPT_POOL_NAMES}
+    pools = {
+        name: load_prompt_pool(config_dir / "prompts" / name) for name in _PROMPT_POOL_NAMES
+    }
+    pools.update(
+        {
+            name: load_message_pool(config_dir / "fallback" / filename)
+            for name, filename in _MESSAGE_POOL_FILES.items()
+        }
+    )
+    return pools

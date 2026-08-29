@@ -109,6 +109,9 @@ config/
 │       ├── manifest.jsonc
 │       ├── greetings.jsonl
 │       └── reactions.jsonl
+├── fallback/            # the bot's own words, used when a generation fails
+│   ├── daily.txt        # one thought per line
+│   └── daily_tail.txt   # optional closing line, appended about half the time
 └── prompts/              # only used if bot.jsonc's "llm" is enabled
     ├── replies/*.txt      # picked at random for ambient LLM replies
     ├── daily/*.txt        # the daily thought's mood (what it's like)
@@ -355,6 +358,16 @@ quota is best-effort and can change). The bot fails to start if
   Selection is not plain random: each pick is recorded in
   `prompt_history` and recent ones are excluded, so the same mood can't
   come round again for several days.
+- **Fallback when the model is unavailable**: the daily thought is a
+  single API call, so a 429 on a free-tier key (or a timeout, or an
+  empty candidate) would otherwise cost the whole day's post. Rather
+  than retry — which spends more quota against a key that has most
+  likely just run out of it — the bot falls back to
+  `config/fallback/daily.txt`, a hand-written Italian corpus of its own
+  lines, optionally closed with one from `daily_tail.txt`. No network
+  call, no cost, and the same no-repeat rotation as the prompt pools, so
+  a run of bad days doesn't repeat itself either. Logged as
+  `daily_thought_fallback_used`.
 - **Wikipedia rabbit hole**: `dailyThought.linkProbability` (default
   `0.2`) of daily posts instead comment on a genuinely random Wikipedia
   article and link it, using `config/prompts/daily_link/*.txt`.

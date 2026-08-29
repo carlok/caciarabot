@@ -11,7 +11,7 @@ from pathlib import Path
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 
-from caciarabot.bootstrap import load_configuration, load_prompt_pools
+from caciarabot.bootstrap import load_configuration, load_text_pools
 from caciarabot.digest import run_digest_loop
 from caciarabot.llm import run_daily_thought_loop
 from caciarabot.localization import load_locales
@@ -56,7 +56,7 @@ async def _main() -> None:
         )
         sys.exit(1)
 
-    prompt_pools = load_prompt_pools(config_dir)
+    prompt_pools = load_text_pools(config_dir)
 
     locales = load_locales(Path("locales"), bot_config.default_locale)
     db = connect(data_dir / "caciarabot.db")
@@ -83,6 +83,8 @@ async def _main() -> None:
         llm_cited_prompts=prompt_pools["cited"],
         llm_digest_prompts=prompt_pools["digest"],
         llm_secret_prompts=prompt_pools["secret"],
+        daily_fallback_messages=prompt_pools["daily_fallback"],
+        daily_fallback_tails=prompt_pools["daily_fallback_tail"],
         bot_id=me.id,
         bot_username=me.username,
     )

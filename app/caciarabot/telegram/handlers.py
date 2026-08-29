@@ -14,7 +14,7 @@ from aiogram import Bot, Router
 from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
 
-from caciarabot.bootstrap import load_configuration, load_prompt_pools
+from caciarabot.bootstrap import load_configuration, load_text_pools
 from caciarabot.engine.ambient import pick_secret_targets, select_emoji_reaction, select_llm_prompt
 from caciarabot.engine.decision import select
 from caciarabot.engine.matcher import find_matches
@@ -194,7 +194,7 @@ async def cmd_reload(message: Message, runtime: Runtime, bot: Bot) -> None:
         log_event("config_reload_failed", chat_id=chat_id, error_count=len(errors))
         return
 
-    prompt_pools = load_prompt_pools(runtime.config_dir)
+    prompt_pools = load_text_pools(runtime.config_dir)
     new_locales = load_locales(Path("locales"), bot_config.default_locale)
 
     runtime.bot_config = bot_config
@@ -210,6 +210,8 @@ async def cmd_reload(message: Message, runtime: Runtime, bot: Bot) -> None:
     runtime.llm_cited_prompts = prompt_pools["cited"]
     runtime.llm_digest_prompts = prompt_pools["digest"]
     runtime.llm_secret_prompts = prompt_pools["secret"]
+    runtime.daily_fallback_messages = prompt_pools["daily_fallback"]
+    runtime.daily_fallback_tails = prompt_pools["daily_fallback_tail"]
 
     await message.answer(runtime.locales.text(locale, "reload.success"))
     log_event("config_reloaded", chat_id=chat_id, reaction_rules=len(rules))

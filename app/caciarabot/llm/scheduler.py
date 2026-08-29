@@ -31,6 +31,9 @@ from caciarabot.storage import (
 )
 
 
+_FALLBACK_TAIL_PROBABILITY = 0.5
+
+
 def seconds_until_next(time_str: str, tz: ZoneInfo, now: datetime | None = None) -> float:
     hour, minute = (int(part) for part in time_str.split(":"))
     current = now or datetime.now(tz)
@@ -100,6 +103,26 @@ async def _generate_link_thought(runtime: Runtime, rng: random.Random) -> str | 
     return f"{comment}\n\n{article.title}\n{article.url}"
 
 
+def _compose_fallback(runtime: Runtime, rng: random.Random) -> str | None:
+    """Builds a thought from the hand-written corpus, no API call involved.
+
+    Openers and closings rotate independently and each closing stands on
+    its own after any opener, so a corpus of 30 + 12 lines covers far
+    more days than 30 -- and the no-repeat history means a run of failed
+    days doesn't repeat itself either.
+    """
+    opener = _pick_rotating(runtime, "daily_fallback", runtime.daily_fallback_messages, rng)
+    if opener is None:
+        return None
+    if runtime.daily_fallback_tails and rng.random() < _FALLBACK_TAIL_PROBABILITY:
+        tail = _pick_rotating(
+            runtime, "daily_fallback_tail", runtime.daily_fallback_tails, rng
+        )
+        if tail:
+            return f"{opener}\n\n{tail}"
+    return opener
+
+
 async def post_daily_thought(bot: Bot, runtime: Runtime) -> None:
     if not runtime.llm_daily_prompts or not runtime.gemini_api_key:
         return
@@ -130,8 +153,15 @@ async def post_daily_thought(bot: Bot, runtime: Runtime) -> None:
             "Write your thought of the day now.",
         )
     if not text:
+        # One call a day means one failure costs the whole day. Retrying
+        # would spend more quota against a key that has most likely just
+        # run out of it, so fall back to the local corpus instead: no
+        # network, no cost, and the group still hears from the bot.
         log_event("daily_thought_failed", reason="empty generation")
-        return
+        text = _compose_fallback(runtime, rng)
+        if not text:
+            return
+        log_event("daily_thought_fallback_used")
 
     for chat_id in get_awake_chat_ids(runtime.db):
         if runtime.bot_config.llm_dry_run:

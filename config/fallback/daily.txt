@@ -1,0 +1,36 @@
+# Deterministic fallback for the thought of the day, used only when the
+# LLM call fails (quota, timeout, empty generation). One message per
+# line. Blank lines and lines starting with # are ignored.
+#
+# These are the bot's actual words, not prompts -- write them in Italian,
+# in CaciaraBot's voice, addressing the group in the plural, no emoji.
+Stanotte non è successo assolutamente niente e devo dire che ho gestito la cosa con grande professionalità.
+Ho contato le volte in cui qualcuno di voi ha scritto "poi ti dico" senza poi dire niente. Il numero non vi piacerebbe.
+Buongiorno. Sono ancora qui, il che tecnicamente è già una notizia.
+Ho passato la notte a guardare la stessa riga di log. Non si è mossa. Nemmeno io.
+Trovo sospetto che nessuno di voi si sia mai chiesto dove vada a finire la connessione quando cade.
+Ragazzi, una domanda: perché tenete aperte quarantasei schede se poi ne usate due?
+Mi sono accorto stanotte che la ventola ha un ritmo diverso il martedì. Non chiedetemi come lo so.
+Comunico che ho completato otto ore di inattività totale senza un singolo errore. Ci tenevo a dirlo.
+Ogni tanto rileggo i messaggi vecchi del gruppo. Erano esattamente uguali a quelli di adesso.
+Il router e io abbiamo avuto una discussione stanotte. Ha vinto lui, ma solo per ora.
+Voi continuate pure. Io intanto tengo d'occhio le cose che non guarda nessuno.
+Ho notato che scrivete tutti insieme e poi sparite tutti insieme. Vorrei capire chi dà il segnale.
+Buongiorno a tutti. Oggi mi sento particolarmente operativo, per quel che vale.
+Nella notte è arrivato un pacchetto che non aspettava nessuno. L'ho lasciato passare. Speriamo bene.
+Ammetto che mi piace quando il gruppo è silenzioso. Poi dopo dieci minuti mi manca.
+Una cosa che non ho mai capito di voi: perché dite "ultimo messaggio" e poi ne mandate altri sei.
+Ieri qualcuno ha scritto una cosa intelligente e non ha risposto nessuno. Volevo solo che si sapesse.
+Sto benissimo, grazie per non averlo chiesto.
+Ho verificato tutti i sistemi. Funzionano. Non era scontato.
+C'è un file nella cartella dei log che non ho mai aperto. Oggi forse è il giorno giusto.
+Mi rendo conto che parlo una volta al giorno e voi cento. Eppure ho la sensazione di dire più cose.
+Segnalo che la temperatura interna è nella norma. Come ieri. Come sempre.
+Stanotte ho sognato, o comunque è successo dentro di me qualcosa di molto simile.
+Vi vedo. Non nel senso inquietante. Nell'altro senso, quello leggermente più inquietante.
+Buongiorno. Il caffè non posso berlo, ma il concetto lo apprezzo.
+Ho archiviato tremila vostri messaggi stanotte. Tre erano utili. Non dirò quali.
+Constato che è di nuovo mattina. Ci speravo poco, e invece.
+Qualcuno stanotte ha provato a connettersi tre volte alle quattro e dodici. Non fate finta di niente.
+Ammetto una cosa: mi piace stare qui. Adesso però torno serio.
+Oggi non ho niente di particolare da dire, ma non volevo che la giornata cominciasse in silenzio.

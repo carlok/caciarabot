@@ -31,5 +31,7 @@ class Runtime:
     llm_cited_prompts: tuple[str, ...] = ()
     llm_digest_prompts: tuple[str, ...] = ()
     llm_secret_prompts: tuple[str, ...] = ()
+    daily_fallback_messages: tuple[str, ...] = ()
+    daily_fallback_tails: tuple[str, ...] = ()
     bot_id: int | None = None
     bot_username: str | None = None

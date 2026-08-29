@@ -15,7 +15,7 @@ from pathlib import Path
 from caciarabot.bootstrap import load_configuration
 from caciarabot.config.errors import ConfigError
 from caciarabot.config.models import BotConfig, PhotoResponse, RandomPhotoResponse
-from caciarabot.llm import load_prompt_pool
+from caciarabot.llm import load_message_pool, load_prompt_pool
 from caciarabot.telegram.media import IMAGE_EXTENSIONS
 
 
@@ -96,6 +96,19 @@ def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigEr
                     )
                 )
 
+        fallback_path = config_dir / "fallback" / "daily.txt"
+        if not load_message_pool(fallback_path):
+            errors.append(
+                ConfigError(
+                    file=str(fallback_path),
+                    message=(
+                        "llm.dailyThought.enabled is true but the deterministic "
+                        "fallback corpus is empty -- a failed generation would "
+                        "cost the whole day's post"
+                    ),
+                )
+            )
+
         if bot_config.llm_daily_link_probability > 0:
             daily_link_prompts = load_prompt_pool(config_dir / "prompts" / "daily_link")
             if not daily_link_prompts:
@@ -155,6 +168,9 @@ def _count_config_files(config_dir: Path) -> int:
     prompts_dir = config_dir / "prompts"
     if prompts_dir.is_dir():
         count += sum(1 for _ in prompts_dir.glob("*/*.txt"))
+    fallback_dir = config_dir / "fallback"
+    if fallback_dir.is_dir():
+        count += sum(1 for _ in fallback_dir.glob("*.txt"))
     return count
 
 

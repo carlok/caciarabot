@@ -1,0 +1,15 @@
+# Optional closing line appended to a fallback thought. Each one has to
+# stand on its own after any opener above, so keep them short and
+# self-contained.
+Buona giornata, per quanto possa servirvi.
+Comunque, procedete pure.
+Questo era tutto.
+Ci risentiamo domani, salvo imprevisti.
+Non serve rispondere.
+Fine della comunicazione.
+Fate voi.
+Poi non dite che non vi avevo avvisati.
+Detto questo, torno in ascolto.
+Nient'altro da segnalare.
+Buona giornata comunque.
+Ora smetto.
