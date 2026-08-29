@@ -113,6 +113,7 @@ config/
     ├── replies/*.txt      # picked at random for ambient LLM replies
     ├── daily/*.txt        # the daily thought's mood (what it's like)
     ├── daily_depth/*.txt  # the daily thought's length/depth, picked independently
+    ├── daily_style/*.txt  # the daily thought's diction/register, picked independently
     ├── daily_link/*.txt   # used when the daily thought links a random Wikipedia article
     ├── digest/*.txt       # used for the daily CS-link digest
     ├── secret/*.txt       # used by the "segreto" trigger
@@ -344,7 +345,13 @@ quota is best-effort and can change). The bot fails to start if
   independently: `config/prompts/daily_depth/*.txt` controls length and
   development (a blunt one-liner, an unfinished fragment, the normal two
   or three sentences, or a longer thought that actually goes somewhere),
-  so the two pools multiply — 14 moods x 4 depths.
+  and `config/prompts/daily_style/*.txt` controls *diction* — literal and
+  image-free, colloquial chat Italian, flat technical register, or plain
+  prose. Diction is its own dimension because mood instructions alone did
+  not stop the model sliding into the same lyrical register every
+  morning; the style pool also carries the shared ban on its favourite
+  crutch imagery. The three pools multiply — 14 moods x 4 depths x
+  4 dictions.
   Selection is not plain random: each pick is recorded in
   `prompt_history` and recent ones are excluded, so the same mood can't
   come round again for several days.

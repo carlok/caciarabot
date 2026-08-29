@@ -84,14 +84,17 @@ def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigEr
                 )
             )
 
-        depth_prompts = load_prompt_pool(config_dir / "prompts" / "daily_depth")
-        if not depth_prompts:
-            errors.append(
-                ConfigError(
-                    file=str(config_dir / "prompts" / "daily_depth"),
-                    message="llm.dailyThought.enabled is true but no *.txt prompt files were found",
+        for pool_name in ("daily_depth", "daily_style"):
+            if not load_prompt_pool(config_dir / "prompts" / pool_name):
+                errors.append(
+                    ConfigError(
+                        file=str(config_dir / "prompts" / pool_name),
+                        message=(
+                            "llm.dailyThought.enabled is true but no *.txt "
+                            "prompt files were found"
+                        ),
+                    )
                 )
-            )
 
         if bot_config.llm_daily_link_probability > 0:
             daily_link_prompts = load_prompt_pool(config_dir / "prompts" / "daily_link")

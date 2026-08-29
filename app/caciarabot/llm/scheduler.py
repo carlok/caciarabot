@@ -109,12 +109,19 @@ async def post_daily_thought(bot: Bot, runtime: Runtime) -> None:
     text = await _generate_link_thought(runtime, rng)
 
     if text is None:
-        # Mood and depth are picked independently, so the pools multiply:
-        # 14 moods x 4 depths is far more distinct days than either alone.
+        # Mood, depth and diction are picked independently, so the pools
+        # multiply: 14 moods x 4 depths x 4 dictions is far more distinct
+        # days than any one of them alone. Diction is its own dimension
+        # because mood instructions alone did not stop the model sliding
+        # into the same lyrical-elegiac register every morning.
         prompt = _pick_rotating(runtime, "daily", runtime.llm_daily_prompts, rng)
-        depth = _pick_rotating(runtime, "daily_depth", runtime.llm_daily_depth_prompts, rng)
-        if depth:
-            prompt = f"{prompt}\n\n{depth}"
+        for pool_name, pool in (
+            ("daily_depth", runtime.llm_daily_depth_prompts),
+            ("daily_style", runtime.llm_daily_style_prompts),
+        ):
+            extra = _pick_rotating(runtime, pool_name, pool, rng)
+            if extra:
+                prompt = f"{prompt}\n\n{extra}"
 
         text = await generate_reply(
             runtime.gemini_api_key,

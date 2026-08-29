@@ -21,6 +21,7 @@ _PROMPT_POOL_NAMES = (
     "replies",
     "daily",
     "daily_depth",
+    "daily_style",
     "daily_link",
     "cited",
     "digest",
