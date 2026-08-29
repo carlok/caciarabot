@@ -20,15 +20,28 @@ if [[ "${1:-}" == "--no-cache" ]]; then
     NOCACHE_FLAG="--no-cache"
 fi
 
+# Bot settings moved from config/bot.jsonc into .env, so a leftover copy
+# is now both ignored by the bot and in the way of a clean pull. Convert
+# it before pulling, while it is still there to convert.
+if [[ -f config/bot.jsonc ]]; then
+    echo "==> config/bot.jsonc is obsolete: bot settings now live in .env"
+    echo "    Your settings, as environment variables:"
+    echo
+    python3 deploy/bot_jsonc_to_env.py config/bot.jsonc | sed 's/^/      /'
+    echo
+    echo "    Save the ones you want, then get the file out of git's way:"
+    echo "      python3 deploy/bot_jsonc_to_env.py config/bot.jsonc >> .env"
+    echo "      \$EDITOR .env   # drop anything you do not actually want"
+    echo "      git checkout -- config/bot.jsonc 2>/dev/null || rm -f config/bot.jsonc"
+    echo
+    echo "    (checkout succeeds only while the file is still tracked, in which"
+    echo "     case the pull removes it for you; otherwise it is untracked and"
+    echo "     the rm handles it.) Then run this script again."
+    exit 1
+fi
+
 echo "==> git pull"
 git pull
-
-# config/bot.jsonc is gitignored (per-deployment settings); only the
-# template is tracked. Create it on first run so a fresh clone works.
-if [[ ! -f config/bot.jsonc ]]; then
-    echo "==> config/bot.jsonc missing, creating it from config/bot.jsonc.example"
-    cp config/bot.jsonc.example config/bot.jsonc
-fi
 
 echo "==> fixing bind-mount permissions"
 chmod -R o+rX config media

@@ -31,7 +31,10 @@ async def _main() -> None:
 
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
-        print("TELEGRAM_BOT_TOKEN is not set. Copy .env.example to .env and fill it in.", file=sys.stderr)
+        print(
+            "TELEGRAM_BOT_TOKEN is not set. Copy .env.example to .env and fill it in.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     config_dir = _env_path("CACIARABOT_CONFIG_DIR", "config")
@@ -51,7 +54,7 @@ async def _main() -> None:
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
     if bot_config.llm_enabled and not gemini_api_key:
         print(
-            "config/bot.jsonc has llm.enabled=true but GEMINI_API_KEY is not set in the environment.",
+            "CACIARABOT_LLM_ENABLED is true but GEMINI_API_KEY is not set. Add it to .env.",
             file=sys.stderr,
         )
         sys.exit(1)

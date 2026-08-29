@@ -1,78 +1,21 @@
-"""Loads and validates the JSONC global configuration files."""
+"""Loads and validates the global configuration.
+
+The bot settings come from the environment (config/env.py); the two
+remaining files here describe behaviour that is the same on every
+deployment, so they stay tracked JSONC.
+"""
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
-from caciarabot.config.allowed_reactions import ALLOWED_REACTION_EMOJI
+from caciarabot.config.env import bot_config_from_env
 from caciarabot.config.errors import ConfigError, ConfigValidationError
 from caciarabot.config.jsonc import load_jsonc
 from caciarabot.config.models import BotConfig, LimitsConfig, normalization_options_from_dict
 from caciarabot.config.validation import validate_instance
 from caciarabot.normalization import NormalizationOptions
-
-
-def load_bot_config(config_dir: Path) -> tuple[BotConfig, list[ConfigError]]:
-    path = config_dir / "bot.jsonc"
-    data = load_jsonc(path)
-    errors = validate_instance(data, "bot.schema.json", str(path))
-    if errors:
-        return _empty_bot_config(), errors
-
-    random_events = data.get("randomEvents", {})
-    emoji_pool = tuple(random_events.get("emojiReactionPool", ()))
-    unknown_emoji = [e for e in emoji_pool if e not in ALLOWED_REACTION_EMOJI]
-    if unknown_emoji:
-        return _empty_bot_config(), [
-            ConfigError(
-                file=str(path),
-                field="randomEvents.emojiReactionPool",
-                message=(
-                    f"not a Telegram-allowed reaction emoji: {unknown_emoji!r} "
-                    "(see app/caciarabot/config/allowed_reactions.py)"
-                ),
-            )
-        ]
-
-    llm = data.get("llm", {})
-
-    return (
-        BotConfig(
-            default_locale=data["defaultLocale"],
-            timezone=data.get("timezone", "UTC"),
-            reaction_packs=tuple(data["reactionPacks"]),
-            max_reactions_per_message=data.get("maxReactionsPerMessage", 1),
-            passive_reactions=data.get("passiveReactions", True),
-            commands_enabled=data.get("commands", {}).get("enabled", True),
-            emoji_reactions_enabled=random_events.get("enabled", False),
-            emoji_reaction_probability=random_events.get("emojiReactionProbability", 0.0),
-            emoji_reaction_pool=emoji_pool,
-            llm_enabled=llm.get("enabled", False),
-            llm_model=llm.get("model", "gemini-3.1-flash-lite"),
-            llm_dry_run=llm.get("dryRun", False),
-            llm_reply_probability=llm.get("reply", {}).get("probability", 0.0),
-            llm_daily_thought_enabled=llm.get("dailyThought", {}).get("enabled", False),
-            llm_daily_thought_time=llm.get("dailyThought", {}).get("time", "09:00"),
-            llm_daily_link_probability=llm.get("dailyThought", {}).get("linkProbability", 0.2),
-            llm_daily_link_languages=tuple(
-                llm.get("dailyThought", {}).get("linkLanguages", ("it", "en"))
-            ),
-            llm_cited_reply_enabled=llm.get("citedReply", {}).get("enabled", False),
-            llm_cited_trigger_words=tuple(
-                llm.get("citedReply", {}).get("triggerWords", ("caciara",))
-            ),
-            llm_secret_enabled=llm.get("secret", {}).get("enabled", False),
-            llm_secret_probability=llm.get("secret", {}).get("probability", 0.0),
-            llm_secret_cooldown_seconds=llm.get("secret", {}).get("cooldownSeconds", 1800),
-            digest_enabled=llm.get("digest", {}).get("enabled", False),
-            digest_time=llm.get("digest", {}).get("time", "08:00"),
-            digest_sources=tuple(
-                llm.get("digest", {}).get("sources", ("hackernews", "github_trending"))
-            ),
-            digest_reddit_subs=tuple(llm.get("digest", {}).get("redditSubs", ("programming",))),
-        ),
-        [],
-    )
 
 
 def load_normalization_config(config_dir: Path) -> tuple[NormalizationOptions, list[ConfigError]]:
@@ -104,23 +47,12 @@ def load_limits_config(config_dir: Path) -> tuple[LimitsConfig, list[ConfigError
     )
 
 
-def _empty_bot_config() -> BotConfig:
-    return BotConfig(
-        default_locale="it",
-        timezone="UTC",
-        reaction_packs=(),
-        max_reactions_per_message=1,
-        passive_reactions=True,
-        commands_enabled=True,
-    )
-
-
 def load_global_config(
     config_dir: Path,
 ) -> tuple[BotConfig, NormalizationOptions, LimitsConfig, list[ConfigError]]:
     all_errors: list[ConfigError] = []
 
-    bot_config, errors = load_bot_config(config_dir)
+    bot_config, errors = bot_config_from_env(os.environ)
     all_errors.extend(errors)
 
     normalization_options, errors = load_normalization_config(config_dir)

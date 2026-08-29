@@ -20,18 +20,32 @@ multi-phase design spec this project is built from.
 git clone <this repo>
 cd caciarabot
 cp .env.example .env
-$EDITOR .env   # set TELEGRAM_BOT_TOKEN at minimum
-cp config/bot.jsonc.example config/bot.jsonc
-$EDITOR config/bot.jsonc   # optional: enable LLM features, tune probabilities
+$EDITOR .env   # set TELEGRAM_BOT_TOKEN; everything else has a working default
 chmod 777 data && chmod -R o+rX config media # see "Bind mount permissions" below
 podman compose up -d
 ```
 
-`config/bot.jsonc` is your live per-deployment config and is **not
-tracked by git** — only `config/bot.jsonc.example` is, exactly like
-`.env` / `.env.example`. That means a `git pull` can never clobber or
-conflict with your local settings. When the example gains new options,
-diff it against your copy and pull over whatever you want.
+`.env` is the **only** per-deployment file, and git has never tracked
+it. Every setting has a default in code and a `CACIARABOT_*` override
+documented in `.env.example`, so a `git pull` has nothing of yours to
+collide with. There is deliberately no config file for bot settings:
+there used to be a `config/bot.jsonc`, and because it was per-deployment
+*and* tracked, every upstream edit to it aborted the pull on the live
+box. Untracking it didn't help — git still refuses to merge a commit
+that touches a locally-modified file.
+
+A misspelled `CACIARABOT_*` variable is a startup error naming the
+variable, not a silent no-op. Check a deployment without connecting to
+Telegram with `uv run caciarabot-validate`.
+
+Upgrading from a version that had `config/bot.jsonc`:
+
+```bash
+python3 deploy/bot_jsonc_to_env.py config/bot.jsonc >> .env
+```
+
+then delete `config/bot.jsonc`. `deploy/update.sh` stops and prints this
+for you if it finds a leftover copy.
 
 Then add the bot to an Italian Telegram group — but read
 [Telegram privacy mode](#telegram-privacy-mode-read-this-first) below
@@ -45,7 +59,7 @@ your host user's UID — so every bind-mounted directory needs its
 permissions opened up for that shifted UID to read (`config`, `media`)
 or write (`data`) it. Skip this and you'll hit either
 `sqlite3.OperationalError: unable to open database file` (data) or
-`PermissionError: [Errno 13] Permission denied: '/config/bot.jsonc'`
+`PermissionError: [Errno 13] Permission denied: '/config/...'`
 (config) at startup.
 
 - **`./data`** (read-write — SQLite needs to create its file there):
@@ -101,7 +115,6 @@ rights for passive reactions.
 
 ```text
 config/
-├── bot.jsonc            # global settings: locale, packs, maxReactionsPerMessage, ...
 ├── normalization.jsonc  # global text-normalization defaults
 ├── limits.jsonc          # reserved anti-spam knobs (see note below)
 ├── packs/
@@ -112,7 +125,7 @@ config/
 ├── fallback/            # the bot's own words, used when a generation fails
 │   ├── daily.txt        # one thought per line
 │   └── daily_tail.txt   # optional closing line, appended about half the time
-└── prompts/              # only used if bot.jsonc's "llm" is enabled
+└── prompts/              # only used if CACIARABOT_LLM_ENABLED is true
     ├── replies/*.txt      # picked at random for ambient LLM replies
     ├── daily/*.txt        # the daily thought's mood (what it's like)
     ├── daily_depth/*.txt  # the daily thought's length/depth, picked independently
@@ -123,8 +136,11 @@ config/
     └── cited/*.txt        # picked at random when the bot is directly addressed
 ```
 
-- **JSONC** (`bot.jsonc`, `normalization.jsonc`, `limits.jsonc`,
-  `manifest.jsonc`) is used for configuration humans read/edit, with
+- **Environment variables** (`.env`) hold every bot setting — see
+  `.env.example` for the annotated list. They are simply the one place
+  git will never fight you over.
+- **JSONC** (`normalization.jsonc`, `limits.jsonc`, `manifest.jsonc`) is
+  used for shipped behaviour that's the same on every deployment, with
   `//` and `/* */` comments allowed.
 - **JSONL** (`greetings.jsonl`, `reactions.jsonl`, ...) holds reaction
   rules, one compact JSON object per line. No comments inside JSONL —
@@ -292,54 +308,51 @@ from the wrong stage, not a code bug.
 ## Ambient behaviors (optional, off by default)
 
 Two mechanisms independent of the word/phrase trigger system, both
-configured in `bot.jsonc`:
+configured in `.env`:
 
 ### Emoji reactions
 
-```jsonc
-"randomEvents": {
-  "enabled": true,
-  "emojiReactionProbability": 0.33,
-  "emojiReactionPool": ["😁", "😢", "😡", "🤣", "👍", "👎", "🤡"]
-}
+```bash
+CACIARABOT_EMOJI_REACTIONS_ENABLED=true
+CACIARABOT_EMOJI_REACTION_PROBABILITY=0.33
+CACIARABOT_EMOJI_REACTION_POOL=😁,😢,😡,🤣,👍,👎,🤡
 ```
 
 On any ordinary group message, roll this probability to tap a random
 emoji from the pool onto it — Telegram's native tap-to-react badge
 (`setMessageReaction`), not a reply message. Telegram only accepts a
-fixed set of emoji here; `emojiReactionPool` is validated against that
+fixed set of emoji here; the pool is validated against that
 set at config load time (`app/caciarabot/config/allowed_reactions.py`),
 so a typo fails `caciarabot-validate` instead of erroring against the
 live API.
 
 ### LLM replies, daily thought, and cited replies (requires a Gemini API key)
 
-```jsonc
-"llm": {
-  "enabled": true,
-  "model": "gemini-3.1-flash-lite",
-  "dryRun": false,
-  "reply": { "probability": 0.1 },
-  "dailyThought": { "enabled": true, "time": "09:00" },
-  "citedReply": { "enabled": true }
-}
+```bash
+CACIARABOT_LLM_ENABLED=true
+CACIARABOT_LLM_MODEL=gemini-3.1-flash-lite
+CACIARABOT_LLM_DRY_RUN=false
+CACIARABOT_LLM_REPLY_PROBABILITY=0.1
+CACIARABOT_LLM_DAILY_THOUGHT_ENABLED=true
+CACIARABOT_LLM_DAILY_THOUGHT_TIME=09:00
+CACIARABOT_LLM_CITED_REPLY_ENABLED=true
 ```
 
 Set `GEMINI_API_KEY` in `.env` (get one free at
 [aistudio.google.com](https://aistudio.google.com/apikey) — a couple
 of calls a day comfortably fits inside the free tier, though free
 quota is best-effort and can change). The bot fails to start if
-`llm.enabled` is `true` and the key is missing.
+`CACIARABOT_LLM_ENABLED` is true and the key is missing.
 
 - **Reply**: on any group message that didn't already get a word-trigger
-  reaction, roll `reply.probability`; if it hits, a random prompt is
+  reaction, roll `CACIARABOT_LLM_REPLY_PROBABILITY`; if it hits, a random prompt is
   picked from `config/prompts/replies/*.txt` and sent to Gemini
   along with *only that one message's text* — no stored conversation
   history — and the response is sent back as a normal text reply.
 - **Daily thought**: an in-process scheduler (not a host cron job —
   this is one long-running container/process, so a background asyncio
   loop needs no extra infrastructure) wakes up once a day at
-  `dailyThought.time` (in `bot.jsonc`'s `timezone`), picks a random
+  `CACIARABOT_LLM_DAILY_THOUGHT_TIME` (in `CACIARABOT_TIMEZONE`), picks a random
   prompt from `config/prompts/daily/*.txt`, generates a short
   unprompted message, and posts it to every chat the bot has seen.
   The pool covers a deliberately wide mood range — deadpan, warm,
@@ -368,10 +381,10 @@ quota is best-effort and can change). The bot fails to start if
   call, no cost, and the same no-repeat rotation as the prompt pools, so
   a run of bad days doesn't repeat itself either. Logged as
   `daily_thought_fallback_used`.
-- **Wikipedia rabbit hole**: `dailyThought.linkProbability` (default
+- **Wikipedia rabbit hole**: `CACIARABOT_LLM_DAILY_LINK_PROBABILITY` (default
   `0.2`) of daily posts instead comment on a genuinely random Wikipedia
   article and link it, using `config/prompts/daily_link/*.txt`.
-  Language is picked at random from `dailyThought.linkLanguages`
+  Language is picked at random from `CACIARABOT_LLM_DAILY_LINK_LANGUAGES`
   (default `["it","en"]`); English articles still get Italian
   commentary. Very short stub articles are skipped (up to 3 attempts),
   and any failure — lost roll, fetch error, empty generation — falls
@@ -442,9 +455,9 @@ a restart.
 (the only thing with a `category` field) — they don't affect emoji
 reactions, the LLM features, or the digest.
 
-**`/reload`** re-parses `bot.jsonc`, `normalization.jsonc`,
-`limits.jsonc`, every reaction pack, and every prompt pool
-(`replies`/`daily`/`cited`/`digest`/`secret`), and swaps them in only
+**`/reload`** re-parses `normalization.jsonc`, `limits.jsonc`, every
+reaction pack, every prompt pool, and the fallback corpus, and swaps
+them in only
 if the whole set validates — a bad JSONL line reports the same
 `file:line` diagnostic as `caciarabot-validate` and leaves the running
 config untouched, no restart needed either way.
@@ -456,12 +469,12 @@ normalized and evaluated against triggers in memory, aggregate
 counters are updated, and the message body is discarded. No full
 message text is logged or persisted by default.
 
-**Exception**: if `llm.enabled` is `true`, the LLM reply feature sends
+**Exception**: if `CACIARABOT_LLM_ENABLED` is true, the LLM reply feature sends
 the *single message text that triggered a reply roll* to Google's
 Gemini API over the network — this is the one place message content
 leaves the machine. It is not stored locally either way, and no
 conversation history is sent, only that one message. If this is a
-concern, leave `llm.enabled: false` (the default).
+concern, leave `CACIARABOT_LLM_ENABLED` unset (the default).
 
 ## Development
 

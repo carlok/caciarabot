@@ -12,6 +12,8 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from caciarabot.bootstrap import load_configuration
 from caciarabot.config.errors import ConfigError
 from caciarabot.config.models import BotConfig, PhotoResponse, RandomPhotoResponse
@@ -156,7 +158,7 @@ def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigEr
 
 
 def _count_config_files(config_dir: Path) -> int:
-    top_level = ["bot.jsonc", "normalization.jsonc", "limits.jsonc"]
+    top_level = ["normalization.jsonc", "limits.jsonc"]
     count = sum(1 for name in top_level if (config_dir / name).is_file())
     packs_dir = config_dir / "packs"
     if packs_dir.is_dir():
@@ -184,6 +186,10 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # Bot settings come from the environment, so validating without
+    # .env loaded would check the defaults rather than the deployment.
+    load_dotenv()
+
     bot_config, _normalization_options, _limits_config, rules, errors = load_configuration(
         args.config_dir
     )
@@ -205,7 +211,7 @@ def main() -> None:
 
     config_file_count = _count_config_files(args.config_dir)
     print("Configuration valid.")
-    print(f"{config_file_count} files")
+    print(f"{config_file_count} files + bot settings from the environment")
     print(f"{len(rules)} reaction rules")
     print(f"{len(media_files)} local media files")
     print("0 errors")

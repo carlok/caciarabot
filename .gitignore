@@ -6,11 +6,6 @@ __pycache__/
 .DS_Store
 
 .env
-# Live bot config is per-deployment and never tracked -- the shipped
-# template is config/bot.jsonc.example, copied on first run (same
-# pattern as .env / .env.example above). Tracking the live file meant
-# every upstream edit to it collided with local settings on `git pull`.
-/config/bot.jsonc
 /data/*.db
 /data/*.db-shm
 /data/*.db-wal

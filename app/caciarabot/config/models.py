@@ -10,12 +10,18 @@ from caciarabot.normalization import NormalizationOptions
 
 @dataclass(frozen=True, slots=True)
 class BotConfig:
-    default_locale: str
-    timezone: str
-    reaction_packs: tuple[str, ...]
-    max_reactions_per_message: int
-    passive_reactions: bool
-    commands_enabled: bool
+    """Every field has a working default, and every field is overridable
+    by a `CACIARABOT_<FIELD_NAME>` environment variable (see config/env.py).
+    There is no configuration file: an unset environment means these
+    values, which are a usable Italian deployment with the LLM off.
+    """
+
+    default_locale: str = "it"
+    timezone: str = "Europe/Rome"
+    reaction_packs: tuple[str, ...] = ("core-it", "custom")
+    max_reactions_per_message: int = 1
+    passive_reactions: bool = True
+    commands_enabled: bool = True
     emoji_reactions_enabled: bool = False
     emoji_reaction_probability: float = 0.0
     emoji_reaction_pool: tuple[str, ...] = ()
