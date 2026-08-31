@@ -53,5 +53,15 @@ podman compose build $NOCACHE_FLAG
 echo "==> podman compose up -d"
 podman compose up -d
 
+# `up -d` leaves a running container alone when its image did not change,
+# so a config-only update (a new JSONL rule, an edited prompt, a media
+# folder) would otherwise be invisible: config/ is a read-only bind mount
+# that the bot reads once at startup. caciarabot-validate reads it live,
+# which makes the mismatch especially confusing -- the validator sees the
+# new rule while the running bot does not. The restart is a couple of
+# seconds and removes the whole class of problem.
+echo "==> podman compose restart (config is read at startup)"
+podman compose restart
+
 echo "==> done"
 podman compose logs --tail 10

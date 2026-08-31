@@ -88,6 +88,16 @@ pull-fix-rebuild-restart sequence in one command:
 ./deploy/update.sh            # or --no-cache if a build seems stale
 ```
 
+It always restarts the container at the end, even when the image didn't
+change. Config lives in a read-only bind mount that the bot reads once
+at startup, and `podman compose up -d` leaves a running container alone
+when its image is identical — so a config-only change (a new JSONL rule,
+an edited prompt, a new media folder) would otherwise never reach the
+running bot. `caciarabot-validate` reads the mount live, which makes
+that mismatch especially confusing: the validator reports the new rule
+while the bot carries on without it. `/reload` in the chat does the same
+job without a restart.
+
 ## Telegram privacy mode (read this first)
 
 By default, Telegram bots only receive messages that are commands
