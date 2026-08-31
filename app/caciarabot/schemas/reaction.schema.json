@@ -58,7 +58,7 @@
         "required": ["type", "weight"],
         "properties": {
           "type": {
-            "enum": ["text", "photo", "randomPhoto"]
+            "enum": ["text", "media", "randomMedia", "photo", "randomPhoto"]
           },
           "weight": { "type": "number", "exclusiveMinimum": 0 },
           "value": { "type": "string" },
@@ -71,11 +71,11 @@
             "then": { "required": ["value"] }
           },
           {
-            "if": { "properties": { "type": { "const": "photo" } } },
+            "if": { "properties": { "type": { "enum": ["media", "photo"] } } },
             "then": { "required": ["path"] }
           },
           {
-            "if": { "properties": { "type": { "const": "randomPhoto" } } },
+            "if": { "properties": { "type": { "enum": ["randomMedia", "randomPhoto"] } } },
             "then": { "required": ["directory"] }
           }
         ]

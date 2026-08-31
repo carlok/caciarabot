@@ -16,18 +16,24 @@ from dotenv import load_dotenv
 
 from caciarabot.bootstrap import load_configuration
 from caciarabot.config.errors import ConfigError
-from caciarabot.config.models import BotConfig, PhotoResponse, RandomPhotoResponse
+from caciarabot.config.models import BotConfig, MediaResponse, RandomMediaResponse
 from caciarabot.llm import load_message_pool, load_prompt_pool
-from caciarabot.telegram.media import IMAGE_EXTENSIONS
+from caciarabot.telegram.media import MEDIA_EXTENSIONS, maximum_bytes_for, media_kind
 
 
-def _check_media(media_dir: Path, rules: list) -> tuple[list[ConfigError], set[Path]]:
+def _check_media(
+    media_dir: Path, rules: list
+) -> tuple[list[ConfigError], set[Path], set[Path]]:
     errors: list[ConfigError] = []
     seen_media_files: set[Path] = set()
+    # Files sitting in a randomMedia directory that the picker will never
+    # choose. Not an error -- it's someone's folder -- but silently
+    # ignoring them is how "why does that one never show up" happens.
+    skipped_files: set[Path] = set()
 
     for rule in rules:
         for response in rule.responses:
-            if isinstance(response, PhotoResponse):
+            if isinstance(response, MediaResponse):
                 path = media_dir / response.path
                 if not path.is_file():
                     errors.append(
@@ -38,9 +44,21 @@ def _check_media(media_dir: Path, rules: list) -> tuple[list[ConfigError], set[P
                             record_id=rule.id,
                         )
                     )
+                elif path.suffix.lower() not in MEDIA_EXTENSIONS:
+                    errors.append(
+                        ConfigError(
+                            file=rule.source_file,
+                            line=rule.source_line,
+                            message=(
+                                f"unsupported media type: {path} "
+                                f"(supported: {', '.join(sorted(MEDIA_EXTENSIONS))})"
+                            ),
+                            record_id=rule.id,
+                        )
+                    )
                 else:
                     seen_media_files.add(path)
-            elif isinstance(response, RandomPhotoResponse):
+            elif isinstance(response, RandomMediaResponse):
                 directory = media_dir / response.directory
                 if not directory.is_dir():
                     errors.append(
@@ -52,13 +70,33 @@ def _check_media(media_dir: Path, rules: list) -> tuple[list[ConfigError], set[P
                         )
                     )
                 else:
-                    seen_media_files.update(
-                        p
-                        for p in directory.iterdir()
-                        if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS
-                    )
+                    for candidate in directory.iterdir():
+                        if not candidate.is_file() or candidate.name.startswith("."):
+                            continue
+                        if candidate.suffix.lower() in MEDIA_EXTENSIONS:
+                            seen_media_files.add(candidate)
+                        else:
+                            skipped_files.add(candidate)
 
-    return errors, seen_media_files
+    # A file over the Bot API's upload ceiling fails at send time, in a
+    # group, hours later. Catching it here is the whole point of a
+    # validator.
+    for path in sorted(seen_media_files):
+        limit = maximum_bytes_for(path)
+        size = path.stat().st_size
+        if size > limit:
+            errors.append(
+                ConfigError(
+                    file=str(path),
+                    message=(
+                        f"{size / 1024 / 1024:.1f} MB exceeds Telegram's "
+                        f"{limit // 1024 // 1024} MB upload limit for a "
+                        f"{media_kind(path)}"
+                    ),
+                )
+            )
+
+    return errors, seen_media_files, skipped_files
 
 
 def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigError]:
@@ -194,10 +232,10 @@ def main() -> None:
         args.config_dir
     )
 
-    media_errors, media_files = ([], set())
+    media_errors, media_files, skipped_files = ([], set(), set())
     llm_errors: list[ConfigError] = []
     if not errors:
-        media_errors, media_files = _check_media(args.media_dir, rules)
+        media_errors, media_files, skipped_files = _check_media(args.media_dir, rules)
         llm_errors = _check_llm_prompts(args.config_dir, bot_config)
 
     all_errors = [*errors, *media_errors, *llm_errors]
@@ -214,7 +252,16 @@ def main() -> None:
     print(f"{config_file_count} files + bot settings from the environment")
     print(f"{len(rules)} reaction rules")
     print(f"{len(media_files)} local media files")
-    print("0 errors")
+    if skipped_files:
+        print(
+            f"\n{len(skipped_files)} file(s) in media directories will never be sent "
+            f"(unsupported type; supported: {', '.join(sorted(MEDIA_EXTENSIONS))}):"
+        )
+        for path in sorted(skipped_files)[:10]:
+            print(f"  {path}")
+        if len(skipped_files) > 10:
+            print(f"  ... and {len(skipped_files) - 10} more")
+    print("\n0 errors")
 
 
 if __name__ == "__main__":

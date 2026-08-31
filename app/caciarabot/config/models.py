@@ -76,20 +76,24 @@ class TextResponse:
 
 
 @dataclass(frozen=True, slots=True)
-class PhotoResponse:
+class MediaResponse:
+    """One specific local file: image, video or GIF, chosen by extension."""
+
     path: str
     weight: float
-    type: Literal["photo"] = "photo"
+    type: Literal["media"] = "media"
 
 
 @dataclass(frozen=True, slots=True)
-class RandomPhotoResponse:
+class RandomMediaResponse:
+    """Any one file from a local directory, images and videos alike."""
+
     directory: str
     weight: float
-    type: Literal["randomPhoto"] = "randomPhoto"
+    type: Literal["randomMedia"] = "randomMedia"
 
 
-Response = TextResponse | PhotoResponse | RandomPhotoResponse
+Response = TextResponse | MediaResponse | RandomMediaResponse
 
 
 @dataclass(frozen=True, slots=True)

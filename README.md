@@ -169,9 +169,11 @@ Fields:
 - `priority`: accepted by the schema, not yet enforced (Phase 2).
 - `normalization`: optional per-rule override of the global
   normalization options (e.g. `{"ignoreAccents": true}`).
-- `responses`: weighted list of `text`, `photo` (single file, `path`
-  relative to `media/`), or `randomPhoto` (`directory` relative to
-  `media/`, one file picked at random per send).
+- `responses`: weighted list of `text`, `media` (single file, `path`
+  relative to `media/`), or `randomMedia` (`directory` relative to
+  `media/`, one file picked at random per send). `photo` and
+  `randomPhoto` are accepted as synonyms — they predate video support
+  and existing packs are full of them.
 
 Run the validator after editing (see below) — a bad line is reported
 with its exact file and line number and won't silently break the bot.
@@ -181,16 +183,35 @@ with its exact file and line number and won't silently break the bot.
 ```text
 media/
 └── images/
-    ├── buongiorno/
+    ├── buongiorno/    # .jpg, .png, .mp4, .gif ... all in one folder
     └── disastro/
 ```
 
-Drop `.jpg`/`.jpeg`/`.png`/`.webp`/`.gif` files into the directory a
-`randomPhoto` response points at. No CDN or external host is used —
-local files are the source of truth. After the first successful
-upload, CaciaraBot caches Telegram's `file_id` (keyed by path + size +
-modification time) so it never re-uploads the same file; replacing the
-file on disk invalidates the cache automatically.
+Drop files into the directory a `randomMedia` response points at.
+Images and videos live side by side in the same folder and are picked
+from the same draw — nothing separates them.
+
+| Extension | Sent as | Size limit |
+|---|---|---|
+| `.jpg` `.jpeg` `.png` `.webp` | photo | 10 MB |
+| `.mp4` `.mov` `.m4v` `.webm` | video | 50 MB |
+| `.gif` | animation | 50 MB |
+
+The kind follows the file extension, because Telegram has a separate
+API method per kind and a `file_id` minted by one cannot be replayed
+through another. `.gif` goes out as an *animation* rather than a photo
+— `sendPhoto` on a GIF delivers a single still frame.
+
+Anything else in the folder is skipped, silently at runtime and
+explicitly by `caciarabot-validate`, which lists both the unsendable
+files and any that exceed Telegram's upload ceiling. `.avif` is a
+common surprise here: Telegram does not accept it.
+
+No CDN or external host is used — local files are the source of truth.
+After the first successful upload, CaciaraBot caches Telegram's
+`file_id` (keyed by path + size + modification time) so it never
+re-uploads the same file; replacing the file on disk invalidates the
+cache automatically.
 
 ## Validating configuration
 

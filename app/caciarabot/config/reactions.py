@@ -14,9 +14,9 @@ from pathlib import Path
 from caciarabot.config.errors import ConfigError
 from caciarabot.config.models import (
     Match,
-    PhotoResponse,
+    MediaResponse,
     PhraseMatch,
-    RandomPhotoResponse,
+    RandomMediaResponse,
     ReactionRule,
     Response,
     TextResponse,
@@ -41,10 +41,12 @@ def _parse_response(data: dict) -> Response:
     weight = float(data["weight"])
     if response_type == "text":
         return TextResponse(value=data["value"], weight=weight)
-    if response_type == "photo":
-        return PhotoResponse(path=data["path"], weight=weight)
-    if response_type == "randomPhoto":
-        return RandomPhotoResponse(directory=data["directory"], weight=weight)
+    # "photo"/"randomPhoto" predate video support and stay accepted:
+    # existing packs use them everywhere and they mean the same thing.
+    if response_type in ("media", "photo"):
+        return MediaResponse(path=data["path"], weight=weight)
+    if response_type in ("randomMedia", "randomPhoto"):
+        return RandomMediaResponse(directory=data["directory"], weight=weight)
     raise ValueError(f"unsupported response type: {response_type!r}")
 
 

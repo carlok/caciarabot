@@ -74,7 +74,7 @@ def test_missing_media_file_is_detected_by_the_validator_helper(tmp_path: Path):
     rules, errors = load_reaction_file(jsonl_path)
     assert errors == []
 
-    media_errors, media_files = _check_media(tmp_path, rules)
+    media_errors, media_files, _skipped = _check_media(tmp_path, rules)
 
     assert len(media_errors) == 1
     assert "missing.jpg" in media_errors[0].message
