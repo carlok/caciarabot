@@ -16,7 +16,7 @@ import aiohttp
 from caciarabot.logging_utils import log_event
 
 _REQUEST_TIMEOUT_SECONDS = 10
-_USER_AGENT = "caciarabot/1.0 (self-hosted Telegram bot; +https://github.com/carlok/caciarabot)"
+USER_AGENT = "caciarabot/1.0 (self-hosted Telegram bot; +https://github.com/carlok/caciarabot)"
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,7 +113,7 @@ async def fetch_reddit(session: aiohttp.ClientSession, subs: tuple[str, ...]) ->
     fails gracefully like the other sources, for anyone who opts in with
     a setup that works for them."""
     candidates: list[Candidate] = []
-    headers = {"User-Agent": _USER_AGENT}
+    headers = {"User-Agent": USER_AGENT}
     timeout = aiohttp.ClientTimeout(total=_REQUEST_TIMEOUT_SECONDS)
     for sub in subs:
         url = f"https://www.reddit.com/r/{sub}/top.json"

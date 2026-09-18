@@ -45,6 +45,7 @@ class BotConfig:
     # digest/sources.py), so it needs to be opted into explicitly.
     digest_sources: tuple[str, ...] = ("hackernews", "github_trending")
     digest_reddit_subs: tuple[str, ...] = ("programming",)
+    digest_english_only: bool = True
 
 
 @dataclass(frozen=True, slots=True)

@@ -423,6 +423,28 @@ quota is best-effort and can change). The bot fails to start if
   the post. No dedup table: with millions of articles a repeat is
   vanishingly unlikely, so tracking them would be complexity for
   nothing.
+- **Daily link digest**: at `CACIARABOT_DIGEST_TIME` the bot fetches
+  candidates from Hacker News and GitHub trending, picks one it hasn't
+  sent before, and posts it with a comment from
+  `config/prompts/digest/*.txt`.
+- **English-only targets** (`CACIARABOT_DIGEST_ENGLISH_ONLY`, default
+  `true`): the group reads Italian and English, so a Chinese README or a
+  French blog post is noise. Two stages, cheapest first. The whole pool
+  is filtered on the title and description the source already supplied —
+  free, no extra request, and on a normal day it removes two or three
+  GitHub-trending repos whose description is entirely Chinese. Only the
+  *picked* link is then fetched and checked, because verifying fifty
+  candidates to post one would be fifty requests a day; a rejection
+  drops that link and draws again, up to 5 times.
+  For a GitHub repo the check reads its raw README rather than the repo
+  page: github.com serves `<html lang="en">` on every page it renders,
+  including repos written entirely in Chinese, so checking the rendered
+  page would wave through precisely what this is for. Elsewhere the
+  page's declared `lang` decides, falling back to an English-stopword
+  ratio over the visible text. A page that gives no usable evidence (a
+  JavaScript shell, a three-line README) is *accepted* — rejecting on
+  missing evidence would quietly thin the pool for no gain. Logged as
+  `digest_language_filtered` and `digest_language_rejected`.
 - **Cited reply**: when someone directly addresses the bot — types its
   `@username` in text, or uses Telegram's native reply feature on one
   of the bot's own earlier messages — it *always* replies (no
