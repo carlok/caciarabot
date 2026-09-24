@@ -406,9 +406,16 @@ async def _handle_secret(message: Message, runtime: Runtime, prompt: str) -> Non
     if not reply_text:
         return
 
+    # Only the number of people, never their names. These are the display
+    # names of real group members, and the README promises the logs stay
+    # free of conversation content -- names of who was talked about are
+    # squarely within the spirit of that. The count is all the operator
+    # needs to see the feature working. (This also cleared CodeQL alert
+    # py/clear-text-logging-sensitive-data, which flagged the dataflow
+    # from pick_secret_targets into the log line.)
     if runtime.bot_config.llm_dry_run:
-        log_event("llm_secret_dry_run", chat_id=chat_id, targets=",".join(targets), text=reply_text)
+        log_event("llm_secret_dry_run", chat_id=chat_id, target_count=len(targets), text=reply_text)
     else:
         await message.answer(reply_text)
     increment_counter(runtime.db, "global", "llm_secrets_sent")
-    log_event("llm_secret_selected", chat_id=chat_id, targets=",".join(targets))
+    log_event("llm_secret_selected", chat_id=chat_id, target_count=len(targets))

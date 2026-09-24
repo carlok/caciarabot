@@ -522,6 +522,11 @@ normalized and evaluated against triggers in memory, aggregate
 counters are updated, and the message body is discarded. No full
 message text is logged or persisted by default.
 
+The `segreto` feature keeps a roster of who has posted (display names
+only, no message content) because the Bot API cannot list a group's
+membership. Those names are never written to the log: the events say
+how many people a secret was about, not which ones.
+
 **Exception**: if `CACIARABOT_LLM_ENABLED` is true, the LLM reply feature sends
 the *single message text that triggered a reply roll* to Google's
 Gemini API over the network — this is the one place message content
