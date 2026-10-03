@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import aiohttp
@@ -20,7 +21,8 @@ from caciarabot.digest.language import looks_non_english, page_is_english
 from caciarabot.digest.picker import normalize_url_hash, pick_candidate
 from caciarabot.digest.sources import Candidate, fetch_all
 from caciarabot.llm.gemini import generate_reply
-from caciarabot.llm.scheduler import seconds_until_next
+from caciarabot.llm.scheduler import is_weekend_in_bot_timezone, seconds_until_next
+from caciarabot.llm.wikipedia import fetch_random_article
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
 from caciarabot.storage import (
@@ -44,6 +46,34 @@ async def run_digest_loop(bot: Bot, runtime: Runtime) -> None:
 # post is noise here, so the pool is filtered on metadata (free) and the
 # picked link is then verified against the real page (one request).
 _MAXIMUM_LANGUAGE_CHECKS = 5
+
+
+async def fetch_digest_candidates(
+    session: aiohttp.ClientSession,
+    runtime: Runtime,
+    now: datetime | None = None,
+) -> list[Candidate]:
+    """Weekdays pull from the configured tech sources; weekends use non-tech Wikipedia."""
+    if is_weekend_in_bot_timezone(runtime, now):
+        article = await fetch_random_article(
+            session,
+            runtime.bot_config.llm_daily_link_languages,
+            topic="nontechnical",
+        )
+        if article is None:
+            return []
+        return [
+            Candidate(
+                source="wikipedia",
+                title=article.title,
+                url=article.url,
+                excerpt=article.extract,
+            )
+        ]
+
+    return await fetch_all(
+        session, runtime.bot_config.digest_sources, runtime.bot_config.digest_reddit_subs
+    )
 
 
 def _drop_non_english_metadata(candidates: list[Candidate]) -> list[Candidate]:
@@ -75,6 +105,11 @@ async def _pick_readable(
         if not runtime.bot_config.digest_english_only:
             return candidate
 
+        # Weekend Wikipedia picks are often Italian; the English-page check
+        # is for tech links whose language is not obvious from metadata.
+        if candidate.source == "wikipedia":
+            return candidate
+
         if await page_is_english(session, candidate.url) is False:
             log_event("digest_language_rejected", stage="page", url=candidate.url)
             rejected.add(candidate.url)
@@ -83,7 +118,7 @@ async def _pick_readable(
     return None
 
 
-async def post_digest(bot: Bot, runtime: Runtime) -> None:
+async def post_digest(bot: Bot, runtime: Runtime, now: datetime | None = None) -> None:
     if not runtime.bot_config.digest_enabled or not runtime.gemini_api_key:
         return
     if not runtime.llm_digest_prompts:
@@ -91,9 +126,7 @@ async def post_digest(bot: Bot, runtime: Runtime) -> None:
         return
 
     async with aiohttp.ClientSession() as session:
-        candidates = await fetch_all(
-            session, runtime.bot_config.digest_sources, runtime.bot_config.digest_reddit_subs
-        )
+        candidates = await fetch_digest_candidates(session, runtime, now=now)
 
         if not candidates:
             log_event("digest_skipped", reason="no_candidates")
