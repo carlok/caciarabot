@@ -83,20 +83,17 @@ fix it permanently with `echo 'umask 022' >> ~/.bashrc` (or the rc
 file for your actual shell), then start a new shell session. Until
 that's fixed, or as a general convenience, use
 [`deploy/update.sh`](deploy/update.sh) to do the whole
-pull-fix-rebuild-restart sequence in one command:
+pull-fix-rebuild-recreate sequence in one command:
 ```bash
 ./deploy/update.sh            # or --no-cache if a build seems stale
 ```
 
-It always restarts the container at the end, even when the image didn't
-change. Config lives in a read-only bind mount that the bot reads once
-at startup, and `podman compose up -d` leaves a running container alone
-when its image is identical — so a config-only change (a new JSONL rule,
-an edited prompt, a new media folder) would otherwise never reach the
-running bot. `caciarabot-validate` reads the mount live, which makes
-that mismatch especially confusing: the validator reports the new rule
-while the bot carries on without it. `/reload` in the chat does the same
-job without a restart.
+It always runs `podman compose down` then `up -d` after the build, so
+the `caciarabot` container is torn down and recreated from the current
+image (not merely restarted in place). `down` does not pass `-v`: bind
+mounts (`config/`, `media/`, `data/`) stay on disk. Config is read once
+at startup, so recreating the container is what picks up JSONL, prompt,
+and media changes without relying on `/reload` in the chat.
 
 ## Telegram privacy mode (read this first)
 

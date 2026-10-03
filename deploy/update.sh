@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-command update: pull, fix bind-mount permissions, rebuild, restart.
+# One-command update: pull, fix bind-mount permissions, rebuild, recreate.
 #
 # The chmod step exists because of a recurring rootless-Podman gotcha: the
 # container's non-root user (UID 1000) doesn't map to your host user, so
@@ -50,18 +50,16 @@ chmod 600 .env
 echo "==> podman compose build $NOCACHE_FLAG"
 podman compose build $NOCACHE_FLAG
 
-echo "==> podman compose up -d"
-podman compose up -d
+# `up -d` alone reuses a running container when Compose thinks nothing
+# changed, and `restart` only stops/starts that same container -- neither
+# guarantees a fresh container from the image we just built. Config is a
+# read-only bind mount read once at startup, so a stale process would miss
+# prompt and JSONL edits even after a successful build.
+echo "==> podman compose down (stop and remove the caciarabot container)"
+podman compose down
 
-# `up -d` leaves a running container alone when its image did not change,
-# so a config-only update (a new JSONL rule, an edited prompt, a media
-# folder) would otherwise be invisible: config/ is a read-only bind mount
-# that the bot reads once at startup. caciarabot-validate reads it live,
-# which makes the mismatch especially confusing -- the validator sees the
-# new rule while the running bot does not. The restart is a couple of
-# seconds and removes the whole class of problem.
-echo "==> podman compose restart (config is read at startup)"
-podman compose restart
+echo "==> podman compose up -d (recreate from the current image)"
+podman compose up -d
 
 echo "==> done"
 podman compose logs --tail 10
