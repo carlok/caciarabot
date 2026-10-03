@@ -1,4 +1,4 @@
-from caciarabot.llm.wikipedia import _parse_summary
+from caciarabot.llm.wikipedia import _parse_summary, looks_technical
 
 
 def _summary(extract: str, title: str = "Chiesa dell'Immacolata", url: str | None = "https://it.wikipedia.org/wiki/X"):
@@ -40,3 +40,13 @@ def test_rejects_empty_response():
 
 def test_rejects_whitespace_only_extract():
     assert _parse_summary(_summary("   \n  "), "it") is None
+
+
+def test_looks_technical_matches_software_topics():
+    extract = "A programming language used for systems software. " * 5
+    assert looks_technical("Python (programming language)", extract)
+
+
+def test_looks_technical_rejects_plain_literature():
+    extract = "A novel by Umberto Eco set in a medieval monastery. " * 5
+    assert not looks_technical("Il nome della rosa", extract)

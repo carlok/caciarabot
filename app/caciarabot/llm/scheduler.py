@@ -34,6 +34,17 @@ from caciarabot.storage import (
 _FALLBACK_TAIL_PROBABILITY = 0.5
 
 
+def is_weekend_in_bot_timezone(runtime: Runtime, now: datetime | None = None) -> bool:
+    """True on Saturday or Sunday in the bot's configured timezone."""
+    tz = ZoneInfo(runtime.bot_config.timezone)
+    current = now if now is not None else datetime.now(tz)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=tz)
+    else:
+        current = current.astimezone(tz)
+    return current.weekday() >= 5
+
+
 def seconds_until_next(time_str: str, tz: ZoneInfo, now: datetime | None = None) -> float:
     hour, minute = (int(part) for part in time_str.split(":"))
     current = now or datetime.now(tz)
@@ -68,7 +79,9 @@ def _pick_rotating(
     return prompt
 
 
-async def _generate_link_thought(runtime: Runtime, rng: random.Random) -> str | None:
+async def _generate_link_thought(
+    runtime: Runtime, rng: random.Random, now: datetime | None = None
+) -> str | None:
     """The "Wikipedia rabbit hole" variant: comment on a random article and link it.
 
     Returns None for any reason at all (feature off, lost the roll, no
@@ -81,9 +94,13 @@ async def _generate_link_thought(runtime: Runtime, rng: random.Random) -> str | 
     if rng.random() >= runtime.bot_config.llm_daily_link_probability:
         return None
 
+    topic = "nontechnical" if is_weekend_in_bot_timezone(runtime, now) else "any"
     async with aiohttp.ClientSession() as session:
         article = await fetch_random_article(
-            session, runtime.bot_config.llm_daily_link_languages, rng=rng
+            session,
+            runtime.bot_config.llm_daily_link_languages,
+            rng=rng,
+            topic=topic,
         )
     if article is None:
         return None
@@ -129,7 +146,7 @@ async def post_daily_thought(bot: Bot, runtime: Runtime) -> None:
 
     rng = random.Random()
 
-    text = await _generate_link_thought(runtime, rng)
+    text = await _generate_link_thought(runtime, rng, now=datetime.now(ZoneInfo(runtime.bot_config.timezone)))
 
     if text is None:
         # Mood, depth and diction are picked independently, so the pools

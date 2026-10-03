@@ -10,7 +10,9 @@ caller falls back to a normal daily thought).
 from __future__ import annotations
 
 import random
+import re
 from dataclasses import dataclass
+from typing import Literal
 
 import aiohttp
 
@@ -23,6 +25,22 @@ _USER_AGENT = "caciarabot/1.0 (self-hosted Telegram bot; +https://github.com/car
 # entries, tiny localities) that give the model nothing to react to.
 _MINIMUM_EXTRACT_CHARS = 150
 _MAX_ATTEMPTS = 3
+_MAX_FILTERED_ATTEMPTS = 10
+
+TopicFilter = Literal["any", "technical", "nontechnical"]
+
+_TECHNICAL_PATTERN = re.compile(
+    r"\b("
+    r"software|computer|computing|programming|programmer|algorithm|"
+    r"javascript|typescript|python|java|golang|rust|linux|"
+    r"kernel|database|cryptocurrency|bitcoin|blockchain|"
+    r"semiconductor|microprocessor|"
+    r"artificial intelligence|machine learning|neural network|"
+    r"open.?source|github|kubernetes|docker|"
+    r"cybersecurity|hacker"
+    r")\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +49,21 @@ class Article:
     extract: str
     url: str
     language: str
+
+
+def looks_technical(title: str, extract: str) -> bool:
+    """Heuristic: True when the article is clearly about technology."""
+    haystack = f"{title}\n{extract}"
+    return _TECHNICAL_PATTERN.search(haystack) is not None
+
+
+def _matches_topic(title: str, extract: str, topic: TopicFilter) -> bool:
+    if topic == "any":
+        return True
+    technical = looks_technical(title, extract)
+    if topic == "technical":
+        return technical
+    return not technical
 
 
 def _parse_summary(data: dict, language: str) -> Article | None:
@@ -48,6 +81,7 @@ async def fetch_random_article(
     session: aiohttp.ClientSession,
     languages: tuple[str, ...],
     rng: random.Random | None = None,
+    topic: TopicFilter = "any",
 ) -> Article | None:
     if not languages:
         return None
@@ -55,8 +89,9 @@ async def fetch_random_article(
     active_rng = rng or random.Random()
     timeout = aiohttp.ClientTimeout(total=_REQUEST_TIMEOUT_SECONDS)
     headers = {"User-Agent": _USER_AGENT}
+    attempts = _MAX_FILTERED_ATTEMPTS if topic != "any" else _MAX_ATTEMPTS
 
-    for _ in range(_MAX_ATTEMPTS):
+    for _ in range(attempts):
         language = active_rng.choice(languages)
         url = f"https://{language}.wikipedia.org/api/rest_v1/page/random/summary"
         try:
@@ -70,8 +105,11 @@ async def fetch_random_article(
             continue
 
         article = _parse_summary(data, language)
-        if article is not None:
-            return article
+        if article is None:
+            continue
+        if not _matches_topic(article.title, article.extract, topic):
+            continue
+        return article
 
     log_event("wikipedia_fetch_failed", reason="no substantive article found")
     return None
