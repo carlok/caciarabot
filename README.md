@@ -424,6 +424,18 @@ quota is best-effort and can change). The bot fails to start if
   candidates from Hacker News and GitHub trending, picks one it hasn't
   sent before, and posts it with a comment from
   `config/prompts/digest/*.txt`.
+- **Weekend digest**: on Saturday and Sunday (bot timezone) the digest
+  posts a random non-technical Wikipedia article instead, and uses its
+  own prompt pool, `config/prompts/digest_weekend/*.txt`, rather than
+  the tech one. The tech prompts tell the model it reads CS feeds and
+  must state something technically true and non-obvious; handed a
+  150-character Wikipedia stub, that produced invented facts and
+  `package.json` jokes about a county sheriff. The weekend prompts
+  instead confine the model to the excerpt and forbid implying outcomes
+  or quality the excerpt doesn't state. The pool is chosen by the
+  candidate's source, not the weekday, so a prompt always matches its
+  content; an empty pool falls back to the tech one rather than losing
+  the day.
 - **English-only targets** (`CACIARABOT_DIGEST_ENGLISH_ONLY`, default
   `true`): the group reads Italian and English, so a Chinese README or a
   French blog post is noise. Two stages, cheapest first. The whole pool

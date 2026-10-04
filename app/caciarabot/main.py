@@ -85,6 +85,7 @@ async def _main() -> None:
         llm_daily_link_prompts=prompt_pools["daily_link"],
         llm_cited_prompts=prompt_pools["cited"],
         llm_digest_prompts=prompt_pools["digest"],
+        llm_digest_weekend_prompts=prompt_pools["digest_weekend"],
         llm_secret_prompts=prompt_pools["secret"],
         daily_fallback_messages=prompt_pools["daily_fallback"],
         daily_fallback_tails=prompt_pools["daily_fallback_tail"],

@@ -145,7 +145,15 @@ async def post_digest(bot: Bot, runtime: Runtime, now: datetime | None = None) -
         log_event("digest_skipped", reason="no_eligible_candidate")
         return
 
-    prompt = random.choice(runtime.llm_digest_prompts)
+    # Keyed on the candidate rather than the weekday so the prompt always
+    # matches the content. The tech prompts tell the model it reads CS
+    # feeds and must state something technically true; given a 150-character
+    # Wikipedia stub that instruction produces invented facts and forced
+    # code jokes. An empty weekend pool falls back rather than losing the day.
+    prompts = runtime.llm_digest_prompts
+    if candidate.source == "wikipedia" and runtime.llm_digest_weekend_prompts:
+        prompts = runtime.llm_digest_weekend_prompts
+    prompt = random.choice(prompts)
     user_message = f"Title: {candidate.title}\nSource: {candidate.source}\nURL: {candidate.url}"
     if candidate.excerpt:
         user_message += f"\nExcerpt: {candidate.excerpt}"

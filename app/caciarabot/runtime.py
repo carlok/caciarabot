@@ -30,6 +30,7 @@ class Runtime:
     llm_daily_link_prompts: tuple[str, ...] = ()
     llm_cited_prompts: tuple[str, ...] = ()
     llm_digest_prompts: tuple[str, ...] = ()
+    llm_digest_weekend_prompts: tuple[str, ...] = ()
     llm_secret_prompts: tuple[str, ...] = ()
     daily_fallback_messages: tuple[str, ...] = ()
     daily_fallback_tails: tuple[str, ...] = ()

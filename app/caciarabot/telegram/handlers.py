@@ -209,6 +209,7 @@ async def cmd_reload(message: Message, runtime: Runtime, bot: Bot) -> None:
     runtime.llm_daily_link_prompts = prompt_pools["daily_link"]
     runtime.llm_cited_prompts = prompt_pools["cited"]
     runtime.llm_digest_prompts = prompt_pools["digest"]
+    runtime.llm_digest_weekend_prompts = prompt_pools["digest_weekend"]
     runtime.llm_secret_prompts = prompt_pools["secret"]
     runtime.daily_fallback_messages = prompt_pools["daily_fallback"]
     runtime.daily_fallback_tails = prompt_pools["daily_fallback_tail"]

@@ -131,3 +131,53 @@ def test_daily_link_weekday_does_not_filter_topic(make_runtime, monkeypatch):
     friday = datetime(2026, 10, 2, 9, 0, tzinfo=_TZ)
     asyncio.run(scheduler._generate_link_thought(runtime, __import__("random").Random(0), now=friday))
     assert wiki.await_args.kwargs.get("topic", "any") == "any"
+
+
+def _run_post_digest(runtime, monkeypatch, candidate: Candidate) -> str:
+    """Runs post_digest with the network stubbed; returns the prompt Gemini got."""
+    from caciarabot.digest import digest as digest_module
+    from caciarabot.storage import touch_chat
+
+    seen: list[str] = []
+
+    async def fake_candidates(session, rt, now=None):
+        return [candidate]
+
+    async def fake_generate(_key, _model, prompt, _message):
+        seen.append(prompt)
+        return "commento"
+
+    monkeypatch.setattr(digest_module, "fetch_digest_candidates", fake_candidates)
+    monkeypatch.setattr(digest_module, "generate_reply", fake_generate)
+    touch_chat(runtime.db, 1)
+    asyncio.run(digest_module.post_digest(object(), runtime))
+    return seen[0]
+
+
+def _prompt_runtime(make_runtime, weekend_prompts):
+    return make_runtime(
+        bot_config={"digest_enabled": True, "llm_dry_run": True},
+        llm_digest_prompts=("TECH",),
+        llm_digest_weekend_prompts=weekend_prompts,
+    )
+
+
+def test_wikipedia_candidate_gets_the_weekend_prompt(make_runtime, monkeypatch):
+    runtime = _prompt_runtime(make_runtime, ("WEEKEND",))
+    wiki = Candidate(source="wikipedia", title="Kotka", url="https://it.wikipedia.org/wiki/Kotka")
+
+    assert _run_post_digest(runtime, monkeypatch, wiki) == "WEEKEND"
+
+
+def test_tech_candidate_keeps_the_tech_prompt(make_runtime, monkeypatch):
+    runtime = _prompt_runtime(make_runtime, ("WEEKEND",))
+    hn = Candidate(source="hackernews", title="HN", url="https://example.com/hn")
+
+    assert _run_post_digest(runtime, monkeypatch, hn) == "TECH"
+
+
+def test_empty_weekend_pool_falls_back_rather_than_losing_the_day(make_runtime, monkeypatch):
+    runtime = _prompt_runtime(make_runtime, ())
+    wiki = Candidate(source="wikipedia", title="Kotka", url="https://it.wikipedia.org/wiki/Kotka")
+
+    assert _run_post_digest(runtime, monkeypatch, wiki) == "TECH"

@@ -26,6 +26,7 @@ _PROMPT_POOL_NAMES = (
     "daily_link",
     "cited",
     "digest",
+    "digest_weekend",
     "secret",
 )
 

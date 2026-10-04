@@ -182,6 +182,19 @@ def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigEr
                 )
             )
 
+    if bot_config.digest_enabled:
+        weekend_prompts = load_prompt_pool(config_dir / "prompts" / "digest_weekend")
+        if not weekend_prompts:
+            errors.append(
+                ConfigError(
+                    file=str(config_dir / "prompts" / "digest_weekend"),
+                    message=(
+                        "the digest uses Wikipedia on weekends but no *.txt prompt "
+                        "files were found for it"
+                    ),
+                )
+            )
+
     if bot_config.llm_secret_enabled:
         secret_prompts = load_prompt_pool(config_dir / "prompts" / "secret")
         if not secret_prompts:
