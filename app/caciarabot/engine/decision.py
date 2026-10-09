@@ -62,7 +62,14 @@ def select(
     if not firing:
         return []
 
+    # Shuffle first, then stable-sort by priority: higher priority always
+    # wins a collision, and rules sharing a priority stay in random order,
+    # so the old "any firing rule is equally likely" behaviour is exactly
+    # what a pack with no priorities gets. Priority orders the rules that
+    # *fired*, not the ones that matched -- a high-priority rule that loses
+    # its probability roll steps aside rather than silencing the rest.
     active_rng.shuffle(firing)
+    firing.sort(key=lambda m: m.rule.priority, reverse=True)
     chosen_matches = firing[:max_reactions_per_message]
 
     decisions: list[Decision] = []

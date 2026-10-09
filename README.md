@@ -173,7 +173,10 @@ Fields:
 - `probability` (0–1): chance the trigger fires once eligible.
 - `cooldownSeconds`: minimum time between this trigger firing again in
   the same chat.
-- `priority`: accepted by the schema, not yet enforced (Phase 2).
+- `priority` (integer, default `0`): when several rules fire on the same message and
+  `maxReactionsPerMessage` can't fit them all, higher priority wins; rules sharing a
+  priority are chosen at random. It orders rules that *fired*, so a high-priority rule
+  that loses its `probability` roll steps aside instead of silencing the others.
 - `normalization`: optional per-rule override of the global
   normalization options (e.g. `{"ignoreAccents": true}`).
 - `responses`: weighted list of `text`, `media` (single file, `path`
