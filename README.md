@@ -131,7 +131,8 @@ config/
 │       └── reactions.jsonl
 ├── fallback/            # the bot's own words, used when a generation fails
 │   ├── daily.txt        # one thought per line
-│   └── daily_tail.txt   # optional closing line, appended about half the time
+│   ├── daily_tail.txt   # optional closing line, appended about half the time
+│   └── digest.txt       # canned digest comment, used when the model call fails
 └── prompts/              # only used if CACIARABOT_LLM_ENABLED is true
     ├── replies/*.txt      # picked at random for ambient LLM replies
     ├── daily/*.txt        # the daily thought's mood (what it's like)
@@ -427,6 +428,13 @@ quota is best-effort and can change). The bot fails to start if
   candidates from Hacker News and GitHub trending, picks one it hasn't
   sent before, and posts it with a comment from
   `config/prompts/digest/*.txt`.
+- **Digest fallback**: if the comment generation fails after a link was
+  already picked, deduplicated and language-checked, the link is still
+  posted with a line from `config/fallback/digest.txt` instead of the
+  whole day being skipped. Those lines say nothing about the link's
+  content (the bot never read it), so they work for a tech repo and a
+  Wikipedia article alike. No retry, same reasoning as the daily
+  thought. Logged as `digest_fallback_used`.
 - **Weekend digest**: on Saturday and Sunday (bot timezone) the digest
   posts a random non-technical Wikipedia article instead, and uses its
   own prompt pool, `config/prompts/digest_weekend/*.txt`, rather than

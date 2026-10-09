@@ -89,6 +89,7 @@ async def _main() -> None:
         llm_secret_prompts=prompt_pools["secret"],
         daily_fallback_messages=prompt_pools["daily_fallback"],
         daily_fallback_tails=prompt_pools["daily_fallback_tail"],
+        digest_fallback_comments=prompt_pools["digest_fallback"],
         bot_id=me.id,
         bot_username=me.username,
     )

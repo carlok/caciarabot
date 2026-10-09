@@ -213,6 +213,7 @@ async def cmd_reload(message: Message, runtime: Runtime, bot: Bot) -> None:
     runtime.llm_secret_prompts = prompt_pools["secret"]
     runtime.daily_fallback_messages = prompt_pools["daily_fallback"]
     runtime.daily_fallback_tails = prompt_pools["daily_fallback_tail"]
+    runtime.digest_fallback_comments = prompt_pools["digest_fallback"]
 
     await message.answer(runtime.locales.text(locale, "reload.success"))
     log_event("config_reloaded", chat_id=chat_id, reaction_rules=len(rules))

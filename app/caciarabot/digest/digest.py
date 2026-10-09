@@ -21,7 +21,7 @@ from caciarabot.digest.language import looks_non_english, page_is_english
 from caciarabot.digest.picker import normalize_url_hash, pick_candidate
 from caciarabot.digest.sources import Candidate, fetch_all
 from caciarabot.llm.gemini import generate_reply
-from caciarabot.llm.scheduler import is_weekend_in_bot_timezone, seconds_until_next
+from caciarabot.llm.scheduler import is_weekend_in_bot_timezone, pick_rotating, seconds_until_next
 from caciarabot.llm.wikipedia import fetch_random_article
 from caciarabot.logging_utils import log_event
 from caciarabot.runtime import Runtime
@@ -160,8 +160,18 @@ async def post_digest(bot: Bot, runtime: Runtime, now: datetime | None = None) -
 
     comment = await generate_reply(runtime.gemini_api_key, runtime.bot_config.llm_model, prompt, user_message)
     if not comment:
+        # The hard part already succeeded: a link was fetched, deduplicated
+        # and language-checked. Losing the whole day to a failed comment
+        # throws that away, so post the link with a canned line instead.
+        # Same reasoning as the daily thought: retrying spends quota against
+        # a key that has most likely just run out of it.
         log_event("digest_failed", reason="empty generation", url=candidate.url)
-        return
+        comment = pick_rotating(
+            runtime, "digest_fallback", runtime.digest_fallback_comments, random.Random()
+        )
+        if not comment:
+            return
+        log_event("digest_fallback_used", url=candidate.url)
 
     text = f"\U0001f4f0 {candidate.title}\n{candidate.url}\n\n{comment}\n\n— fonte: {candidate.source}"
 

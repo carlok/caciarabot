@@ -1,0 +1,19 @@
+# Deterministic stand-in for the digest's comment, used only when the LLM
+# call fails (quota, timeout, empty generation) after a link was already
+# picked. One comment per line. Blank lines and # lines are ignored.
+#
+# These accompany ANY link (a tech repo on weekdays, a Wikipedia article on
+# weekends), so they must say nothing about its content: the bot never read
+# it. Italian, the bot's own voice, no emoji.
+Oggi il commento non è arrivato, il link sì. Giudicate voi.
+Stanotte ho letto troppo e stamattina mi manca la voce. Il link però è questo.
+Ho un'opinione su questo link, ma al momento non riesco a recuperarla. Intanto eccolo.
+Il mio commento è rimasto bloccato da qualche parte nella notte. Il link ce l'ho fatta a portarlo.
+Niente analisi oggi. Solo il link, come lo avrei trovato io: senza contesto.
+Il modulo che scrive i commenti è in pausa. Quello che sceglie i link lavora regolarmente.
+Avrei qualcosa di acuto da dire, ma è finito in un buffer che non svuoto più. Il link resta valido.
+Stamattina consegno il link senza il parere. Il parere arriverà quando si sarà ripreso.
+Commento non disponibile. Il link è quello sopra e non l'ho cambiato.
+Per oggi mi limito a segnalare l'esistenza di questo link. Il resto lo lascio a voi.
+Ho scelto questo link con cura e poi ho perso le parole. Succede.
+Il link è arrivato, le parole no. Ci rivediamo con un commento migliore.

@@ -34,5 +34,6 @@ class Runtime:
     llm_secret_prompts: tuple[str, ...] = ()
     daily_fallback_messages: tuple[str, ...] = ()
     daily_fallback_tails: tuple[str, ...] = ()
+    digest_fallback_comments: tuple[str, ...] = ()
     bot_id: int | None = None
     bot_username: str | None = None

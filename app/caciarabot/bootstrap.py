@@ -36,6 +36,7 @@ _PROMPT_POOL_NAMES = (
 _MESSAGE_POOL_FILES = {
     "daily_fallback": "daily.txt",
     "daily_fallback_tail": "daily_tail.txt",
+    "digest_fallback": "digest.txt",
 }
 
 _EMPTY_BOT_CONFIG = BotConfig(

@@ -183,6 +183,18 @@ def _check_llm_prompts(config_dir: Path, bot_config: BotConfig) -> list[ConfigEr
             )
 
     if bot_config.digest_enabled:
+        digest_fallback = config_dir / "fallback" / "digest.txt"
+        if not load_message_pool(digest_fallback):
+            errors.append(
+                ConfigError(
+                    file=str(digest_fallback),
+                    message=(
+                        "the digest is enabled but its fallback corpus is empty -- a "
+                        "failed generation would cost the whole day's post"
+                    ),
+                )
+            )
+
         weekend_prompts = load_prompt_pool(config_dir / "prompts" / "digest_weekend")
         if not weekend_prompts:
             errors.append(

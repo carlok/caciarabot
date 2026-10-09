@@ -63,7 +63,7 @@ async def run_daily_thought_loop(bot: Bot, runtime: Runtime) -> None:
         await post_daily_thought(bot, runtime)
 
 
-def _pick_rotating(
+def pick_rotating(
     runtime: Runtime, pool_name: str, pool: tuple[str, ...], rng: random.Random
 ) -> str | None:
     """Pick from a pool, biased away from what was used most recently.
@@ -105,7 +105,7 @@ async def _generate_link_thought(
     if article is None:
         return None
 
-    prompt = _pick_rotating(runtime, "daily_link", runtime.llm_daily_link_prompts, rng)
+    prompt = pick_rotating(runtime, "daily_link", runtime.llm_daily_link_prompts, rng)
     comment = await generate_reply(
         runtime.gemini_api_key,
         runtime.bot_config.llm_model,
@@ -128,11 +128,11 @@ def _compose_fallback(runtime: Runtime, rng: random.Random) -> str | None:
     more days than 30 -- and the no-repeat history means a run of failed
     days doesn't repeat itself either.
     """
-    opener = _pick_rotating(runtime, "daily_fallback", runtime.daily_fallback_messages, rng)
+    opener = pick_rotating(runtime, "daily_fallback", runtime.daily_fallback_messages, rng)
     if opener is None:
         return None
     if runtime.daily_fallback_tails and rng.random() < _FALLBACK_TAIL_PROBABILITY:
-        tail = _pick_rotating(
+        tail = pick_rotating(
             runtime, "daily_fallback_tail", runtime.daily_fallback_tails, rng
         )
         if tail:
@@ -154,12 +154,12 @@ async def post_daily_thought(bot: Bot, runtime: Runtime) -> None:
         # days than any one of them alone. Diction is its own dimension
         # because mood instructions alone did not stop the model sliding
         # into the same lyrical-elegiac register every morning.
-        prompt = _pick_rotating(runtime, "daily", runtime.llm_daily_prompts, rng)
+        prompt = pick_rotating(runtime, "daily", runtime.llm_daily_prompts, rng)
         for pool_name, pool in (
             ("daily_depth", runtime.llm_daily_depth_prompts),
             ("daily_style", runtime.llm_daily_style_prompts),
         ):
-            extra = _pick_rotating(runtime, pool_name, pool, rng)
+            extra = pick_rotating(runtime, pool_name, pool, rng)
             if extra:
                 prompt = f"{prompt}\n\n{extra}"
 
