@@ -218,6 +218,15 @@ explicitly by `caciarabot-validate`, which lists both the unsendable
 files and any that exceed Telegram's upload ceiling. `.avif` is a
 common surprise here: Telegram does not accept it.
 
+Photos have a second limit that has nothing to do with size: width +
+height may not exceed 10000 px and the longer side may not be more than
+20x the shorter, or Telegram answers `PHOTO_INVALID_DIMENSIONS` even for
+a file of a few hundred KB (a long panorama or a tall screenshot). The
+validator reads the dimensions from the file header, using the standard
+library only (no Pillow), and reports these as errors too. A header it
+cannot parse is never reported: refusing a good file over an odd header
+would be worse than the failure being prevented.
+
 No CDN or external host is used — local files are the source of truth.
 After the first successful upload, CaciaraBot caches Telegram's
 `file_id` (keyed by path + size + modification time) so it never

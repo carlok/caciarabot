@@ -18,6 +18,7 @@ from caciarabot.bootstrap import load_configuration
 from caciarabot.config.errors import ConfigError
 from caciarabot.config.models import BotConfig, MediaResponse, RandomMediaResponse
 from caciarabot.llm import load_message_pool, load_prompt_pool
+from caciarabot.telegram.imagesize import photo_shape_problem
 from caciarabot.telegram.media import MEDIA_EXTENSIONS, maximum_bytes_for, media_kind
 
 
@@ -95,6 +96,16 @@ def _check_media(
                     ),
                 )
             )
+
+    # Size is not the only way Telegram refuses a photo: an extreme shape
+    # (a long panorama, a tall screenshot) fails with PHOTO_INVALID_DIMENSIONS
+    # even at a few hundred KB.
+    for path in sorted(seen_media_files):
+        if media_kind(path) != "photo":
+            continue
+        problem = photo_shape_problem(path)
+        if problem:
+            errors.append(ConfigError(file=str(path), message=problem))
 
     return errors, seen_media_files, skipped_files
 
