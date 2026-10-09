@@ -104,11 +104,16 @@ async def _main() -> None:
     dp = Dispatcher()
     dp.include_router(router)
 
+    # asyncio keeps only weak references to tasks, so a fire-and-forget
+    # create_task can be garbage-collected mid-run. Holding them here for the
+    # lifetime of polling keeps the scheduled loops alive.
+    background_tasks: list[asyncio.Task] = []
+
     if bot_config.llm_enabled and bot_config.llm_daily_thought_enabled:
-        asyncio.create_task(run_daily_thought_loop(bot, runtime))
+        background_tasks.append(asyncio.create_task(run_daily_thought_loop(bot, runtime)))
 
     if bot_config.llm_enabled and bot_config.digest_enabled:
-        asyncio.create_task(run_digest_loop(bot, runtime))
+        background_tasks.append(asyncio.create_task(run_digest_loop(bot, runtime)))
 
     await dp.start_polling(bot, runtime=runtime)
 

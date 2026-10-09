@@ -31,7 +31,7 @@ class NormalizationOptions:
     ignore_accents: bool = False
     collapse_repeated_letters: bool = False
 
-    def merged_with(self, override: "NormalizationOptions | None") -> "NormalizationOptions":
+    def merged_with(self, override: NormalizationOptions | None) -> NormalizationOptions:
         """Per-rule overrides win over these (global) values, field by field."""
         if override is None:
             return self
@@ -62,7 +62,11 @@ def _collapse_repeated_letters(text: str) -> str:
     return _REPEATED_CHAR_PATTERN.sub(lambda m: m.group(1), text)
 
 
-def normalize(text: str, options: NormalizationOptions = NormalizationOptions()) -> NormalizedText:
+# NormalizationOptions is frozen, so sharing one default instance is safe.
+_DEFAULT_OPTIONS = NormalizationOptions()
+
+
+def normalize(text: str, options: NormalizationOptions = _DEFAULT_OPTIONS) -> NormalizedText:
     normalized = unicodedata.normalize("NFC", text)
 
     if options.normalize_apostrophes:

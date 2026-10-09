@@ -8,7 +8,6 @@ anything.
 import dataclasses
 
 import pytest
-
 from caciarabot.config.env import bot_config_from_env, environment_variable_name
 from caciarabot.config.models import BotConfig
 

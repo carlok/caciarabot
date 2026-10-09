@@ -18,6 +18,7 @@ caciarabot-validate = "caciarabot.validate:main"
 dev = [
     "pytest>=9.0.3,<10",
     "pytest-asyncio>=1.3,<2",
+    "ruff>=0.16,<0.17",
 ]
 
 [build-system]
@@ -30,3 +31,17 @@ packages = ["app/caciarabot"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+# Deliberately small. Correctness (E/F/B), import order (I), modern syntax (UP),
+# and RUF006, which catches a fire-and-forget asyncio task whose only reference
+# is dropped (asyncio holds tasks weakly, so it can vanish mid-run).
+select = ["E", "F", "I", "UP", "B", "RUF006"]
+ignore = [
+    "E501",  # no formatter in this project, so line length is a style opinion
+    "B905",  # zip(strict=...) on short, fixed-length pairs is noise
+]

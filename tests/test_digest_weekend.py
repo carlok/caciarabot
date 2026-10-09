@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
 
 import pytest
-
 from caciarabot.digest.digest import fetch_digest_candidates
 from caciarabot.digest.sources import Candidate
 from caciarabot.llm.wikipedia import Article

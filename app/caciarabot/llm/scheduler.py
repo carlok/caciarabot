@@ -21,7 +21,7 @@ from aiogram.exceptions import TelegramAPIError
 from caciarabot.engine.rotation import prompt_hash, recent_window, select_fresh_prompt
 from caciarabot.llm.gemini import generate_reply
 from caciarabot.llm.wikipedia import fetch_random_article
-from caciarabot.logging_utils import log_event
+from caciarabot.logging_utils import log_event, logger
 from caciarabot.runtime import Runtime
 from caciarabot.storage import (
     get_awake_chat_ids,
@@ -29,7 +29,6 @@ from caciarabot.storage import (
     increment_counter,
     record_prompt_use,
 )
-
 
 _FALLBACK_TAIL_PROBABILITY = 0.5
 
@@ -60,7 +59,13 @@ async def run_daily_thought_loop(bot: Bot, runtime: Runtime) -> None:
     while True:
         delay = seconds_until_next(runtime.bot_config.llm_daily_thought_time, tz)
         await asyncio.sleep(delay)
-        await post_daily_thought(bot, runtime)
+        # Anything escaping here would end this background task silently:
+        # no log line, and no daily thought ever again until a restart.
+        # CancelledError is a BaseException, so shutdown still works.
+        try:
+            await post_daily_thought(bot, runtime)
+        except Exception:  # noqa: BLE001
+            logger.exception("daily_thought_crashed")
 
 
 def pick_rotating(

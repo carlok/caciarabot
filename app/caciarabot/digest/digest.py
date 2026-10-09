@@ -23,7 +23,7 @@ from caciarabot.digest.sources import Candidate, fetch_all
 from caciarabot.llm.gemini import generate_reply
 from caciarabot.llm.scheduler import is_weekend_in_bot_timezone, pick_rotating, seconds_until_next
 from caciarabot.llm.wikipedia import fetch_random_article
-from caciarabot.logging_utils import log_event
+from caciarabot.logging_utils import log_event, logger
 from caciarabot.runtime import Runtime
 from caciarabot.storage import (
     get_awake_chat_ids,
@@ -39,7 +39,12 @@ async def run_digest_loop(bot: Bot, runtime: Runtime) -> None:
     while True:
         delay = seconds_until_next(runtime.bot_config.digest_time, tz)
         await asyncio.sleep(delay)
-        await post_digest(bot, runtime)
+        # See run_daily_thought_loop: an escaping exception would end this
+        # task silently and the digest would never run again.
+        try:
+            await post_digest(bot, runtime)
+        except Exception:  # noqa: BLE001
+            logger.exception("digest_crashed")
 
 
 # The chat reads Italian and English. A Chinese README or a French blog

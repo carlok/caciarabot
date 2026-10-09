@@ -6,7 +6,6 @@ import dataclasses
 from pathlib import Path
 
 import pytest
-
 from caciarabot.config.models import BotConfig, LimitsConfig
 from caciarabot.localization import Locales
 from caciarabot.normalization import NormalizationOptions

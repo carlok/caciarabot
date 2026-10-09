@@ -9,7 +9,6 @@ import random
 from pathlib import Path
 
 import pytest
-
 from caciarabot.config.reactions import load_reaction_file
 from caciarabot.telegram.media import (
     MEDIA_EXTENSIONS,

@@ -8,7 +8,7 @@ site-packages.
 
 from __future__ import annotations
 
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +19,7 @@ from caciarabot.config.errors import ConfigError
 _SCHEMAS_DIR = Path(__file__).resolve().parent.parent / "schemas"
 
 
-@lru_cache(maxsize=None)
+@cache
 def _load_schema(schema_filename: str) -> dict:
     import json
 
