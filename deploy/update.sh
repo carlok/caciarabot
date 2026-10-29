@@ -2,7 +2,7 @@
 # One-command update: pull, fix bind-mount permissions, rebuild, recreate.
 #
 # The chmod step exists because of a recurring rootless-Podman gotcha: the
-# container's non-root user (UID 1000) doesn't map to your host user, so
+# container's Distroless non-root user (UID 65532) doesn't map to your host user, so
 # freshly git-pulled files under config/ and media/ need to be explicitly
 # made world-readable, or the bot fails at startup with
 # `PermissionError: [Errno 13] Permission denied: ...`. See README.md's

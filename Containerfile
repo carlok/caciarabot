@@ -1,60 +1,61 @@
 # syntax=docker/dockerfile:1
-FROM python:3.12-slim AS builder
+FROM python:3.11-slim-bookworm AS builder
 
-RUN pip install --no-cache-dir uv
+# gcr.io/distroless/python3-debian12 ships Debian's Python 3.11. Build the
+# production venv against the same interpreter path (/usr/bin/python3) that
+# exists in that runtime image (see the symlink step below).
+RUN pip install --no-cache-dir uv \
+    && ln -sf /usr/local/bin/python3.11 /usr/bin/python \
+    && ln -sf /usr/local/bin/python3.11 /usr/bin/python3
+
+ENV UV_PYTHON=/usr/bin/python3
 
 WORKDIR /build
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md uv.lock ./
 COPY app ./app
 COPY locales ./locales
 
-RUN uv sync --no-dev --no-editable
+RUN uv sync --frozen --no-dev --no-editable \
+    && chmod -R a+rX /build
 
-FROM python:3.12-slim AS runtime
+FROM python:3.11-slim-bookworm AS runtime-prep
 
-RUN groupadd --gid 1000 caciarabot \
-    && useradd --uid 1000 --gid caciarabot --create-home --shell /usr/sbin/nologin caciarabot
+RUN mkdir -p /data && chown 65532:65532 /data
 
-WORKDIR /app
-COPY --from=builder /build/.venv /app/.venv
-COPY --from=builder /build/locales /app/locales
+# Public Distroless Python on Debian 12 (no extra registry auth in CI).
+# Docker Hardened Images publish a drop-in alternative when your registry
+# provides them without authentication.
+FROM gcr.io/distroless/python3-debian12:nonroot AS runtime
 
-# COPY preserves the host build context's file permission bits. If the
-# host checkout has a strict umask, files land in the image unreadable
-# by the non-root `caciarabot` user set below -- independent of and in
-# addition to fixing the host umask, so this never depends on it.
-RUN chmod -R a+rX /app
+COPY --from=runtime-prep --chown=65532:65532 /data /data
+COPY --from=builder --chown=65532:65532 /build/.venv /app/.venv
+COPY --from=builder --chown=65532:65532 /build/locales /app/locales
 
-ENV PATH="/app/.venv/bin:${PATH}" \
-    PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1
 
-RUN mkdir -p /data && chown caciarabot:caciarabot /data
-
-USER caciarabot
-
-# Invoke the venv's python interpreter directly rather than the
-# `caciarabot` console-script shim: uv bakes an absolute shebang path
-# into that shim at build time (/build/.venv/...), which breaks once
-# the venv is copied to its runtime location (/app/.venv/...).
-ENTRYPOINT ["/app/.venv/bin/python", "-m", "caciarabot.main"]
+# Invoke the venv interpreter directly rather than the `caciarabot`
+# console-script shim: uv bakes an absolute shebang path into that shim at
+# build time (/build/.venv/...), which breaks once the venv is copied to its
+# runtime location (/app/.venv/...).
+ENTRYPOINT ["/app/.venv/bin/python3", "-m", "caciarabot.main"]
 
 # --- dev target -------------------------------------------------------
 # Editable install at the same path (/app/app) that compose.dev.yaml
 # bind-mounts the source tree over, so code edits take effect on
 # `podman compose restart` with no image rebuild. Not used by default;
 # select it with `podman compose -f compose.yaml -f compose.dev.yaml up`.
-FROM python:3.12-slim AS dev
+FROM python:3.12-slim-bookworm AS dev
 
 RUN pip install --no-cache-dir uv \
     && groupadd --gid 1000 caciarabot \
     && useradd --uid 1000 --gid caciarabot --create-home --shell /bin/bash caciarabot
 
 WORKDIR /app
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md uv.lock ./
 COPY app ./app
 COPY locales ./locales
 
-RUN uv sync
+RUN uv sync --frozen
 
 # See the identical step in the runtime stage above -- same reasoning.
 # Note this only covers the image-baked copy; compose.dev.yaml's bind

@@ -53,7 +53,7 @@ first, or passive triggers silently won't work.
 
 ### Bind mount permissions
 
-The container runs as a fixed non-root UID (1000), which under
+The production container runs as Distroless `nonroot` (UID **65532**), which under
 rootless Podman's default user-namespace shift does **not** map 1:1 to
 your host user's UID — so every bind-mounted directory needs its
 permissions opened up for that shifted UID to read (`config`, `media`)
@@ -63,7 +63,7 @@ or write (`data`) it. Skip this and you'll hit either
 (config) at startup.
 
 - **`./data`** (read-write — SQLite needs to create its file there):
-  - **Native Linux host (rootless Podman):** `podman unshare chown 1000:1000 ./data`
+  - **Native Linux host (rootless Podman):** `podman unshare chown 65532:65532 ./data`
     — sets ownership as seen from inside the container's user
     namespace, no world-writable permissions needed.
   - **macOS / Podman machine (remote client):** `podman unshare` doesn't
@@ -269,6 +269,24 @@ podman compose down
 `docker compose` works too if you'd rather use Docker, but Podman is
 what this project is built and tested against.
 
+### Production image (Distroless)
+
+The default `runtime` target is a [Distroless](https://github.com/GoogleContainerTools/distroless) image (`gcr.io/distroless/python3-debian12:nonroot`): no shell, package manager, or extra utilities. The bot starts with `python -m caciarabot.main` only. [Docker Hardened Images](https://dhi.io/) publish Distroless-compatible Python bases when your registry provides them without extra authentication; this project uses the public Google image so CI and anonymous pulls work without registry login.
+
+#### Debugging the production container
+
+Distroless images cannot be shelled into with `podman exec … sh`. To inspect a running container, use ephemeral debug tooling instead:
+
+```sh
+# Podman 5+ (attach a toolbox with shell and common tools)
+podman debug caciarabot-caciarabot-1
+
+# Docker Desktop / Docker Engine 23+ (temporary debug sidecar)
+docker debug caciarabot-caciarabot-1
+```
+
+From the host you can still read logs and validate configuration outside the container (`uv run caciarabot-validate`).
+
 ### Native Linux: enable the Podman socket first
 
 `podman compose` delegates to a Docker-API-compatible compose provider
@@ -345,6 +363,9 @@ an unpinned build defaults to the *last* stage in `Containerfile`
 If you ever see `No module named caciarabot.main` in the logs, rebuild
 with `podman compose build --no-cache` — that's a stale image built
 from the wrong stage, not a code bug.
+
+The `dev` overlay still runs as UID **1000** (`caciarabot` user); only
+the production `runtime` target uses Distroless UID 65532.
 
 ## Ambient behaviors (optional, off by default)
 
