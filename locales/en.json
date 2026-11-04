@@ -17,6 +17,9 @@
   "stats.line_messages": "Messages observed: {value}",
   "stats.line_triggers": "Triggers matched: {value}",
   "stats.line_reactions": "Reactions sent: {value}",
+  "stats.line_llm_replies_sent": "Spontaneous replies: {value} ({percent}% of messages)",
+  "stats.line_llm_cited_replies_sent": "Replies when addressed: {value} ({percent}% of messages)",
+  "stats.line_emoji_reactions_sent": "Emoji reactions: {value} ({percent}% of messages)",
   "stats.top_header": "Most frequent:",
   "reload.success": "Configuration reloaded.",
   "reload.failed": "Reload failed:\n{errors}"

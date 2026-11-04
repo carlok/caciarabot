@@ -17,6 +17,9 @@
   "stats.line_messages": "Messaggi osservati: {value}",
   "stats.line_triggers": "Trigger riconosciuti: {value}",
   "stats.line_reactions": "Reazioni inviate: {value}",
+  "stats.line_llm_replies_sent": "Risposte spontanee: {value} ({percent}% dei messaggi)",
+  "stats.line_llm_cited_replies_sent": "Risposte quando citato: {value} ({percent}% dei messaggi)",
+  "stats.line_emoji_reactions_sent": "Emoji reaction: {value} ({percent}% dei messaggi)",
   "stats.top_header": "Più frequenti:",
   "reload.success": "Configurazione ricaricata.",
   "reload.failed": "Ricaricamento fallito:\n{errors}"

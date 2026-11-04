@@ -156,6 +156,13 @@ async def cmd_stats(message: Message, runtime: Runtime) -> None:
     chat_id = message.chat.id
     locale = get_chat_locale(runtime.db, chat_id, runtime.bot_config.default_locale)
 
+    observed = get_counter(runtime.db, "global", "messages_observed")
+
+    def rate(key: str) -> str:
+        count = get_counter(runtime.db, "global", key)
+        percent = f"{100 * count / observed:.1f}" if observed else "0.0"
+        return runtime.locales.text(locale, f"stats.line_{key}", value=count, percent=percent)
+
     lines = [
         runtime.locales.text(
             locale, "stats.line_messages", value=get_counter(runtime.db, "global", "messages_observed")
@@ -166,6 +173,9 @@ async def cmd_stats(message: Message, runtime: Runtime) -> None:
         runtime.locales.text(
             locale, "stats.line_reactions", value=get_counter(runtime.db, "global", "reactions_sent")
         ),
+        rate("llm_replies_sent"),
+        rate("llm_cited_replies_sent"),
+        rate("emoji_reactions_sent"),
     ]
 
     top_triggers = get_top_counters(runtime.db, "trigger", 3)

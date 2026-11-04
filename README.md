@@ -95,6 +95,27 @@ mounts (`config/`, `media/`, `data/`) stay on disk. Config is read once
 at startup, so recreating the container is what picks up JSONL, prompt,
 and media changes without relying on `/reload` in the chat.
 
+### Checking what the running bot actually loaded
+
+The production image is distroless: no shell, no `printenv`. So the bot
+tells you instead. On every start it logs the settings it really read:
+
+```bash
+podman compose logs | grep settings_loaded
+```
+
+```text
+settings_loaded llm_enabled=True llm_dry_run=False llm_reply_probability=0.05 ...
+```
+
+That is the quickest way to catch a `.env` edit that never reached the
+process: a plain `podman compose restart` does not re-read `env_file`,
+only `down` then `up -d` does (which `deploy/update.sh` does). And
+`/stats` reports how often each ambient behaviour *actually* fired as a
+percentage of observed messages, so "it replies too often" can be
+answered with a number: spontaneous replies should sit near
+`CACIARABOT_LLM_REPLY_PROBABILITY`.
+
 ## Telegram privacy mode (read this first)
 
 By default, Telegram bots only receive messages that are commands
@@ -527,7 +548,9 @@ quota is best-effort and can change). The bot fails to start if
 ```text
 /help                          - list available commands
 /status                        - show sleep state, passive reactions, activity, category count
-/stats                         - message/trigger/reaction counters, top 3 triggers
+/stats                         - message/trigger/reaction counters, top 3 triggers, and the
+                                 measured rate of spontaneous replies, replies when addressed
+                                 and emoji reactions as a percentage of messages
 /categories                    - list categories and their per-chat enabled/disabled state
 /categories enable <name>      - re-enable a category in this chat (admin only)
 /categories disable <name>     - disable a category in this chat (admin only)
