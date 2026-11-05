@@ -98,7 +98,8 @@ and media changes without relying on `/reload` in the chat.
 ### Checking what the running bot actually loaded
 
 The production image is distroless: no shell, no `printenv`. So the bot
-tells you instead. On every start it logs the settings it really read:
+tells you instead. On every start it logs every setting it really read
+(all of `BotConfig`, no credentials):
 
 ```bash
 podman compose logs | grep settings_loaded

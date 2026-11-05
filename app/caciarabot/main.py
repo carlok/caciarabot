@@ -15,7 +15,7 @@ from caciarabot.bootstrap import load_configuration, load_text_pools
 from caciarabot.digest import run_digest_loop
 from caciarabot.llm import run_daily_thought_loop
 from caciarabot.localization import load_locales
-from caciarabot.logging_utils import log_event
+from caciarabot.logging_utils import log_event, log_loaded_settings
 from caciarabot.runtime import Runtime
 from caciarabot.storage import connect
 from caciarabot.telegram import router
@@ -54,16 +54,7 @@ async def _main() -> None:
     # What the running process actually loaded. A setting edited in .env but
     # never picked up (a restart does not re-read env_file) is otherwise
     # invisible, and the distroless image has no shell to inspect it with.
-    log_event(
-        "settings_loaded",
-        llm_enabled=bot_config.llm_enabled,
-        llm_dry_run=bot_config.llm_dry_run,
-        llm_reply_probability=bot_config.llm_reply_probability,
-        llm_cited_reply_enabled=bot_config.llm_cited_reply_enabled,
-        llm_secret_probability=bot_config.llm_secret_probability,
-        emoji_reactions_enabled=bot_config.emoji_reactions_enabled,
-        emoji_reaction_probability=bot_config.emoji_reaction_probability,
-    )
+    log_loaded_settings(bot_config)
 
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
     if bot_config.llm_enabled and not gemini_api_key:
