@@ -22,7 +22,7 @@ class Runtime:
     media_dir: Path
     config_dir: Path
     owner_id: int | None
-    gemini_api_key: str | None = None
+    llm_api_key: str | None = None
     llm_reply_prompts: tuple[str, ...] = ()
     llm_daily_prompts: tuple[str, ...] = ()
     llm_daily_depth_prompts: tuple[str, ...] = ()

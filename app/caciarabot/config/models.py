@@ -27,6 +27,8 @@ class BotConfig:
     emoji_reaction_pool: tuple[str, ...] = ()
     llm_enabled: bool = False
     llm_model: str = "gemini-3.1-flash-lite"
+    # Any OpenAI-compatible endpoint. The default is Gemini's own.
+    llm_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
     llm_dry_run: bool = False
     llm_reply_probability: float = 0.0
     llm_daily_thought_enabled: bool = False

@@ -142,7 +142,7 @@ def _run_post_digest(runtime, monkeypatch, candidate: Candidate) -> str:
     async def fake_candidates(session, rt, now=None):
         return [candidate]
 
-    async def fake_generate(_key, _model, prompt, _message):
+    async def fake_generate(_key, _model, prompt, _message, **_kwargs):
         seen.append(prompt)
         return "commento"
 

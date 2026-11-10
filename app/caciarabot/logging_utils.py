@@ -21,7 +21,7 @@ def log_loaded_settings(bot_config: BotConfig) -> None:
     """Log every BotConfig field as the running process sees it.
 
     BotConfig holds behaviour knobs only; credentials (the bot token, the
-    Gemini key) are read from the environment separately and never reach it.
+    LLM API key) are read from the environment separately and never reach it.
     The fields are enumerated rather than named one by one, so a new setting
     shows up here without touching this function. CodeQL also stops flagging
     `llm_secret_probability` (a float) as a secret by name.

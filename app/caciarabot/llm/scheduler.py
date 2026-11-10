@@ -19,7 +19,7 @@ from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
 
 from caciarabot.engine.rotation import prompt_hash, recent_window, select_fresh_prompt
-from caciarabot.llm.gemini import generate_reply
+from caciarabot.llm.chat_completions import generate_reply
 from caciarabot.llm.wikipedia import fetch_random_article
 from caciarabot.logging_utils import log_event, logger
 from caciarabot.runtime import Runtime
@@ -112,10 +112,11 @@ async def _generate_link_thought(
 
     prompt = pick_rotating(runtime, "daily_link", runtime.llm_daily_link_prompts, rng)
     comment = await generate_reply(
-        runtime.gemini_api_key,
+        runtime.llm_api_key,
         runtime.bot_config.llm_model,
         prompt,
         f"Title: {article.title}\nLanguage: {article.language}\nExtract: {article.extract}",
+        base_url=runtime.bot_config.llm_base_url,
     )
     if not comment:
         log_event("daily_link_failed", reason="empty generation", url=article.url)
@@ -146,7 +147,7 @@ def _compose_fallback(runtime: Runtime, rng: random.Random) -> str | None:
 
 
 async def post_daily_thought(bot: Bot, runtime: Runtime) -> None:
-    if not runtime.llm_daily_prompts or not runtime.gemini_api_key:
+    if not runtime.llm_daily_prompts or not runtime.llm_api_key:
         return
 
     rng = random.Random()
@@ -169,10 +170,11 @@ async def post_daily_thought(bot: Bot, runtime: Runtime) -> None:
                 prompt = f"{prompt}\n\n{extra}"
 
         text = await generate_reply(
-            runtime.gemini_api_key,
+            runtime.llm_api_key,
             runtime.bot_config.llm_model,
             prompt,
             "Write your thought of the day now.",
+            base_url=runtime.bot_config.llm_base_url,
         )
     if not text:
         # One call a day means one failure costs the whole day. Retrying
