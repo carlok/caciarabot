@@ -20,7 +20,7 @@ from aiogram.exceptions import TelegramAPIError
 from caciarabot.digest.language import looks_non_english, page_is_english
 from caciarabot.digest.picker import normalize_url_hash, pick_candidate
 from caciarabot.digest.sources import Candidate, fetch_all
-from caciarabot.llm.gemini import generate_reply
+from caciarabot.llm.chat_completions import generate_reply
 from caciarabot.llm.scheduler import is_weekend_in_bot_timezone, pick_rotating, seconds_until_next
 from caciarabot.llm.wikipedia import fetch_random_article
 from caciarabot.logging_utils import log_event, logger
@@ -124,7 +124,7 @@ async def _pick_readable(
 
 
 async def post_digest(bot: Bot, runtime: Runtime, now: datetime | None = None) -> None:
-    if not runtime.bot_config.digest_enabled or not runtime.gemini_api_key:
+    if not runtime.bot_config.digest_enabled or not runtime.llm_api_key:
         return
     if not runtime.llm_digest_prompts:
         log_event("digest_failed", reason="no prompts loaded")
@@ -163,7 +163,13 @@ async def post_digest(bot: Bot, runtime: Runtime, now: datetime | None = None) -
     if candidate.excerpt:
         user_message += f"\nExcerpt: {candidate.excerpt}"
 
-    comment = await generate_reply(runtime.gemini_api_key, runtime.bot_config.llm_model, prompt, user_message)
+    comment = await generate_reply(
+        runtime.llm_api_key,
+        runtime.bot_config.llm_model,
+        prompt,
+        user_message,
+        base_url=runtime.bot_config.llm_base_url,
+    )
     if not comment:
         # The hard part already succeeded: a link was fetched, deduplicated
         # and language-checked. Losing the whole day to a failed comment

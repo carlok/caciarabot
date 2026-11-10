@@ -23,6 +23,7 @@ import dataclasses
 import re
 import typing
 from collections.abc import Mapping
+from urllib.parse import urlparse
 
 from caciarabot.config.allowed_reactions import ALLOWED_REACTION_EMOJI
 from caciarabot.config.errors import ConfigError
@@ -57,6 +58,7 @@ _PROBABILITY_FIELDS = (
 _TIME_FIELDS = ("llm_daily_thought_time", "digest_time")
 _NON_EMPTY_FIELDS = ("default_locale", "timezone", "llm_model", "reaction_packs")
 _KNOWN_DIGEST_SOURCES = frozenset({"hackernews", "github_trending", "reddit"})
+_GEMINI_HOST = "generativelanguage.googleapis.com"
 
 
 def environment_variable_name(field_name: str) -> str:
@@ -105,6 +107,10 @@ def _constraint_errors(values: Mapping[str, object]) -> list[ConfigError]:
         if not values[name]:
             fail(name, "must not be empty")
 
+    parsed_url = urlparse(values["llm_base_url"])
+    if parsed_url.scheme not in ("http", "https") or not parsed_url.netloc:
+        fail("llm_base_url", f"must be an http(s) URL, got {values['llm_base_url']!r}")
+
     for name in ("max_reactions_per_message", "llm_secret_cooldown_seconds"):
         if values[name] < 0:
             fail(name, f"must not be negative, got {values[name]}")
@@ -126,6 +132,22 @@ def _constraint_errors(values: Mapping[str, object]) -> list[ConfigError]:
         )
 
     return errors
+
+
+def llm_api_key_from_env(environ: Mapping[str, str], base_url: str) -> str | None:
+    """The key for the configured LLM endpoint.
+
+    `LLM_API_KEY` always applies. `GEMINI_API_KEY` is the older name and
+    still works, but only while the endpoint is Gemini's: after pointing
+    `CACIARABOT_LLM_BASE_URL` somewhere else, a leftover Gemini key must
+    not be sent to a different company.
+    """
+    key = (environ.get("LLM_API_KEY") or "").strip()
+    if key:
+        return key
+    if urlparse(base_url).hostname == _GEMINI_HOST:
+        return (environ.get("GEMINI_API_KEY") or "").strip() or None
+    return None
 
 
 def bot_config_from_env(environ: Mapping[str, str]) -> tuple[BotConfig, list[ConfigError]]:

@@ -410,11 +410,12 @@ set at config load time (`app/caciarabot/config/allowed_reactions.py`),
 so a typo fails `caciarabot-validate` instead of erroring against the
 live API.
 
-### LLM replies, daily thought, and cited replies (requires a Gemini API key)
+### LLM replies, daily thought, and cited replies (requires an LLM API key)
 
 ```bash
 CACIARABOT_LLM_ENABLED=true
 CACIARABOT_LLM_MODEL=gemini-3.1-flash-lite
+CACIARABOT_LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
 CACIARABOT_LLM_DRY_RUN=false
 CACIARABOT_LLM_REPLY_PROBABILITY=0.1
 CACIARABOT_LLM_DAILY_THOUGHT_ENABLED=true
@@ -422,11 +423,23 @@ CACIARABOT_LLM_DAILY_THOUGHT_TIME=09:00
 CACIARABOT_LLM_CITED_REPLY_ENABLED=true
 ```
 
-Set `GEMINI_API_KEY` in `.env` (get one free at
+Set `LLM_API_KEY` in `.env` (`GEMINI_API_KEY`, the older name, still works
+while the base URL is Gemini's). For Gemini, get a key free at
 [aistudio.google.com](https://aistudio.google.com/apikey) — a couple
 of calls a day comfortably fits inside the free tier, though free
-quota is best-effort and can change). The bot fails to start if
+quota is best-effort and can change. The bot fails to start if
 `CACIARABOT_LLM_ENABLED` is true and the key is missing.
+
+The bot talks to the model through the OpenAI chat-completions format
+(`/chat/completions`, a system message plus one user message), which
+Gemini, OpenAI, OpenRouter, Ollama and Anthropic's compatibility layer
+all accept. Gemini is the default only because its endpoint is the
+default `CACIARABOT_LLM_BASE_URL`. To move to another provider, change
+the base URL, `LLM_API_KEY` and `CACIARABOT_LLM_MODEL`, then
+`./deploy/update.sh`, and watch a `CACIARABOT_LLM_DRY_RUN=true` run
+first. Known limits: the request sends `max_tokens`, which OpenAI's
+newest reasoning models reject in favour of `max_completion_tokens`, and
+Gemini's OpenAI endpoint is documented by Google as beta.
 
 - **Reply**: on any group message that didn't already get a word-trigger
   reaction, roll `CACIARABOT_LLM_REPLY_PROBABILITY`; if it hits, a random prompt is

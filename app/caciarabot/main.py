@@ -12,6 +12,7 @@ from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 
 from caciarabot.bootstrap import load_configuration, load_text_pools
+from caciarabot.config.env import llm_api_key_from_env
 from caciarabot.digest import run_digest_loop
 from caciarabot.llm import run_daily_thought_loop
 from caciarabot.localization import load_locales
@@ -56,10 +57,11 @@ async def _main() -> None:
     # invisible, and the distroless image has no shell to inspect it with.
     log_loaded_settings(bot_config)
 
-    gemini_api_key = os.environ.get("GEMINI_API_KEY")
-    if bot_config.llm_enabled and not gemini_api_key:
+    llm_api_key = llm_api_key_from_env(os.environ, bot_config.llm_base_url)
+    if bot_config.llm_enabled and not llm_api_key:
         print(
-            "CACIARABOT_LLM_ENABLED is true but GEMINI_API_KEY is not set. Add it to .env.",
+            "CACIARABOT_LLM_ENABLED is true but no API key is set. Add LLM_API_KEY to .env "
+            "(GEMINI_API_KEY also works while CACIARABOT_LLM_BASE_URL points at Gemini).",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -82,7 +84,7 @@ async def _main() -> None:
         media_dir=media_dir,
         config_dir=config_dir,
         owner_id=owner_id,
-        gemini_api_key=gemini_api_key,
+        llm_api_key=llm_api_key,
         llm_reply_prompts=prompt_pools["replies"],
         llm_daily_prompts=prompt_pools["daily"],
         llm_daily_depth_prompts=prompt_pools["daily_depth"],

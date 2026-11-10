@@ -14,7 +14,7 @@ from caciarabot.llm import scheduler
 def _run_days(make_runtime, monkeypatch, days: int) -> list[str]:
     seen: list[str] = []
 
-    async def fake_generate(_key, _model, prompt, _user_text):
+    async def fake_generate(_key, _model, prompt, _user_text, **_kwargs):
         seen.append(prompt)
         return "pensiero"
 

@@ -268,7 +268,7 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
     # both alternative text replies -- stacking either alongside the
     # cited reply would just be two competing bot messages for one line.
     cited_reply_sent = False
-    if runtime.bot_config.llm_enabled and runtime.bot_config.llm_cited_reply_enabled and runtime.gemini_api_key:
+    if runtime.bot_config.llm_enabled and runtime.bot_config.llm_cited_reply_enabled and runtime.llm_api_key:
         replied_to_bot = (
             message.reply_to_message is not None
             and message.reply_to_message.from_user is not None
@@ -293,7 +293,7 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
         not cited_reply_sent
         and runtime.bot_config.llm_enabled
         and runtime.bot_config.llm_secret_enabled
-        and runtime.gemini_api_key
+        and runtime.llm_api_key
         and contains_word(message.text, "segreto")
         and not is_trigger_on_cooldown(
             runtime.db, chat_id, _SECRET_TRIGGER_ID, runtime.bot_config.llm_secret_cooldown_seconds
@@ -355,11 +355,15 @@ async def on_group_message(message: Message, runtime: Runtime, bot: Bot) -> None
     # text reply per user message is enough, even though an emoji
     # reaction (not a message) or a word-trigger image (a distinct
     # response type, not competing text) can still land regardless.
-    if not cited_reply_sent and runtime.bot_config.llm_enabled and runtime.gemini_api_key:
+    if not cited_reply_sent and runtime.bot_config.llm_enabled and runtime.llm_api_key:
         prompt = select_llm_prompt(runtime.llm_reply_prompts, runtime.bot_config.llm_reply_probability)
         if prompt is not None:
             reply_text = await generate_reply(
-                runtime.gemini_api_key, runtime.bot_config.llm_model, prompt, message.text
+                runtime.llm_api_key,
+                runtime.bot_config.llm_model,
+                prompt,
+                message.text,
+                base_url=runtime.bot_config.llm_base_url,
             )
             if reply_text:
                 if runtime.bot_config.llm_dry_run:
@@ -389,7 +393,11 @@ async def _handle_cited_reply(message: Message, runtime: Runtime, replied_to_bot
         user_message = message.text
 
     reply_text = await generate_reply(
-        runtime.gemini_api_key, runtime.bot_config.llm_model, prompt, user_message
+        runtime.llm_api_key,
+        runtime.bot_config.llm_model,
+        prompt,
+        user_message,
+        base_url=runtime.bot_config.llm_base_url,
     )
     if not reply_text:
         return False
@@ -413,7 +421,11 @@ async def _handle_secret(message: Message, runtime: Runtime, prompt: str) -> Non
 
     user_message = "Name(s): " + ", ".join(targets)
     reply_text = await generate_reply(
-        runtime.gemini_api_key, runtime.bot_config.llm_model, prompt, user_message
+        runtime.llm_api_key,
+        runtime.bot_config.llm_model,
+        prompt,
+        user_message,
+        base_url=runtime.bot_config.llm_base_url,
     )
     if not reply_text:
         return

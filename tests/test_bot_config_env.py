@@ -8,8 +8,13 @@ anything.
 import dataclasses
 
 import pytest
-from caciarabot.config.env import bot_config_from_env, environment_variable_name
+from caciarabot.config.env import (
+    bot_config_from_env,
+    environment_variable_name,
+    llm_api_key_from_env,
+)
 from caciarabot.config.models import BotConfig
+from caciarabot.llm.chat_completions import DEFAULT_BASE_URL
 
 
 def test_empty_environment_gives_a_usable_default_deployment():
@@ -167,3 +172,41 @@ def test_env_example_documents_every_setting():
     ]
 
     assert undocumented == []
+
+
+def test_llm_base_url_defaults_to_gemini_openai_endpoint():
+    config, errors = bot_config_from_env({})
+
+    assert errors == []
+    assert config.llm_base_url == "https://generativelanguage.googleapis.com/v1beta/openai"
+
+
+def test_llm_base_url_can_point_elsewhere():
+    config, errors = bot_config_from_env({"CACIARABOT_LLM_BASE_URL": "http://localhost:11434/v1"})
+
+    assert errors == []
+    assert config.llm_base_url == "http://localhost:11434/v1"
+
+
+def test_llm_base_url_must_be_an_http_url():
+    _, errors = bot_config_from_env({"CACIARABOT_LLM_BASE_URL": "api.openai.com/v1"})
+
+    assert [error.field for error in errors] == ["CACIARABOT_LLM_BASE_URL"]
+
+
+def test_api_key_prefers_llm_api_key():
+    environ = {"LLM_API_KEY": "new", "GEMINI_API_KEY": "old"}
+
+    assert llm_api_key_from_env(environ, "https://api.openai.com/v1") == "new"
+    assert llm_api_key_from_env(environ, DEFAULT_BASE_URL) == "new"
+
+
+def test_gemini_key_is_used_only_against_gemini():
+    environ = {"GEMINI_API_KEY": "old"}
+
+    assert llm_api_key_from_env(environ, DEFAULT_BASE_URL) == "old"
+    assert llm_api_key_from_env(environ, "https://api.openai.com/v1") is None
+
+
+def test_blank_keys_count_as_unset():
+    assert llm_api_key_from_env({"LLM_API_KEY": " ", "GEMINI_API_KEY": ""}, DEFAULT_BASE_URL) is None

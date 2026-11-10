@@ -42,7 +42,7 @@ def make_runtime(tmp_path: Path):
             media_dir=tmp_path,
             config_dir=tmp_path,
             owner_id=None,
-            gemini_api_key="test-key",
+            llm_api_key="test-key",
             llm_daily_prompts=("MOOD-A", "MOOD-B", "MOOD-C", "MOOD-D"),
             llm_daily_depth_prompts=("DEPTH-A", "DEPTH-B", "DEPTH-C", "DEPTH-D"),
             llm_daily_style_prompts=("STYLE-A", "STYLE-B", "STYLE-C", "STYLE-D"),
