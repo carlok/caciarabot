@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/carlok/caciarabot/security/advisories/new
+    about: Report privately via GitHub Security Advisories (see SECURITY.md)
+  - name: Contributing guide
+    url: https://github.com/carlok/caciarabot/blob/master/CONTRIBUTING.md
+    about: How to run tests, open PRs, and contact the maintainer

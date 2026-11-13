@@ -625,7 +625,7 @@ concern, leave `CACIARABOT_LLM_ENABLED` unset (the default).
 
 ```bash
 uv sync
-uv run pytest
+uv run pytest          # includes coverage for app/caciarabot
 uv run caciarabot-validate
 uv run caciarabot   # requires TELEGRAM_BOT_TOKEN in the environment
 ```
@@ -634,3 +634,7 @@ Repository layout: `app/caciarabot/` (Telegram transport, matching
 engine, normalization, storage, config loading — kept as separate
 layers per the clean-interfaces design in PROMPT.md §43), `config/`
 (JSONC/JSONL content), `locales/`, `media/`, `tests/`.
+
+Contributing, security reporting, and agent-oriented notes:
+[CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md),
+[AGENT.md](AGENT.md).

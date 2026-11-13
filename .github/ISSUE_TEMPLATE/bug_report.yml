@@ -1,0 +1,60 @@
+name: Bug report
+description: Something is broken or behaves incorrectly
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Do not include bot tokens, API keys, or
+        private chat content.** Maintainer: [@carlok](https://github.com/carlok).
+
+        For security issues, use [Security Advisories](https://github.com/carlok/caciarabot/security/advisories/new) instead.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What did you expect vs what you observed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Commands, config snippets (no secrets), or message patterns
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Git tag, commit SHA, or approximate date of `master`
+      placeholder: e.g. abc1234 or v0.1.0
+    validations:
+      required: false
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - uv (local dev)
+        - Podman compose
+        - Other / unsure
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Redact tokens and personal data
+      render: shell
+    validations:
+      required: false
