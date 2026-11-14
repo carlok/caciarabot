@@ -79,5 +79,6 @@ This repository is a **Telegram bot**. Treat all credentials as toxic:
 
 ## Contact
 
-Maintainer: GitHub [@carlok](https://github.com/carlok) — use GitHub
-issues/PRs or Security Advisories; do not use email for this project.
+Maintainer: GitHub [@carlok](https://github.com/carlok). Use GitHub
+issues/PRs for development; report vulnerabilities only as described in
+[SECURITY.md](SECURITY.md).

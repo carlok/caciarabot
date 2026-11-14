@@ -9,7 +9,7 @@ body:
         Thanks for the report. **Do not include bot tokens, API keys, or
         private chat content.** Maintainer: [@carlok](https://github.com/carlok).
 
-        For security issues, use [Security Advisories](https://github.com/carlok/caciarabot/security/advisories/new) instead.
+        For security vulnerabilities, follow [SECURITY.md](https://github.com/carlok/caciarabot/blob/master/SECURITY.md) — do not use this form.
 
   - type: textarea
     id: description
