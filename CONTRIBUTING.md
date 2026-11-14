@@ -41,9 +41,8 @@ Participants are expected to follow
 
 ## Security
 
-Report vulnerabilities privately via
-[GitHub Security Advisories](https://github.com/carlok/caciarabot/security/advisories/new)
-— see [SECURITY.md](SECURITY.md). Do not file public issues for
+See [SECURITY.md](SECURITY.md) for how to report vulnerabilities
+privately. **Do not** open public issues or use the bug-report template for
 security problems.
 
 ## Questions

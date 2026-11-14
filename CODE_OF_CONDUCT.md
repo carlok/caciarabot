@@ -61,9 +61,8 @@ acting as an appointed representative at an online or offline event.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may
 be reported to the community leaders responsible for enforcement at
-**GitHub [@carlok](https://github.com/carlok)** (issues or discussions on
-this repository). All complaints will be reviewed and investigated
-promptly and fairly.
+**carlo.perassi@gmail.com**. All complaints will be reviewed and
+investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of
 the reporter of any incident.

@@ -635,6 +635,6 @@ engine, normalization, storage, config loading — kept as separate
 layers per the clean-interfaces design in PROMPT.md §43), `config/`
 (JSONC/JSONL content), `locales/`, `media/`, `tests/`.
 
-Contributing, security reporting, and agent-oriented notes:
-[CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md),
-[AGENT.md](AGENT.md).
+Contributing and agent-oriented notes: [CONTRIBUTING.md](CONTRIBUTING.md),
+[AGENT.md](AGENT.md). Report security vulnerabilities privately per
+[SECURITY.md](SECURITY.md) (not via public issues).
